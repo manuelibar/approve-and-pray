@@ -54,13 +54,13 @@ Ana will raise her hand — along with 400 other files she's responsible for. Ma
 
 The numbers tell all three stories with uncomfortable precision. In 2025, [41% of code was already AI-generated](https://www.quantumrun.com/consulting/github-copilot-statistics/). By early 2026, teams using AI coding tools saw a [98% increase in PR volume with a 91% increase in review time](https://blog.logrocket.com/ai-coding-tools-shift-bottleneck-to-review/). Pull requests are [18% larger on average, and incidents per PR have climbed 24%](https://addyo.substack.com/p/code-review-in-the-age-of-ai). The [review bottleneck is already here](https://levelup.gitconnected.com/the-ai-code-review-bottleneck-is-already-here-most-teams-havent-noticed-1b75e96e6781), and most teams haven't noticed it — because for Ana the symptom looks like "being thorough," for Marcus it looks like "going fast," and for you it looks like "being pragmatic."
 
-AI generation speed has increased roughly 10x in the last two years. Human comprehension speed has not increased at all. It can't. It's a biological constant — bounded by working memory, attention span, and the speed at which the human brain builds mental models of complex systems. We are connecting a firehose to a garden hose, and the three stories are three ways of dealing with the flood:
+AI generation speed has increased roughly 10x in the last two years. Human comprehension speed has not increased at all. It can't. It's a biological constant — bounded by working memory, attention span, and the speed at which the human brain builds mental models of complex systems. Think of it as a mass casualty event arriving at an understaffed ER: code keeps coming in faster than any team can examine it, and the three stories are three different triage protocols.
 
-Ana added valves, filters, and quality controls to the garden hose. The water barely trickles. The garden is dying of thirst. But hey, no contamination.
+Ana does a full diagnostic workup on every patient. Nobody leaves undertreated. The waiting room has backed up three weeks and people are dying in line — but nothing undiagnosed makes it to a ward.
 
-Marcus disconnected the hose and installed sprinklers that run themselves. The garden looks lush. He has no idea what's in the water.
+Marcus wheeled everyone straight to the wards without stopping at triage. The beds are full, the vitals dashboard looks stable, and he's never been busier shipping features. Nobody has actually been examined.
 
-You opened the valve most of the way and you're watching carefully. The garden is getting watered. Some of it is flooding. You know which parts — you just don't have a way to fix it without shutting off the valve entirely.
+You're triaging. Critical cases get your full attention. The stable-looking ones get "probably fine, move along." You know exactly which patients you eyeballed — you just can't go back and examine them without shutting down intake entirely.
 
 **Every approved-and-prayed PR permanently mints new cognitive debt — whether it took four minutes or fifteen days, whether one person approved it or five, whether the review was exhaustive or absent. Ana trades system comprehension for process compliance. Marcus trades it for velocity. You trade it for pragmatism. The exchange rate is getting worse every quarter, and none of you are paying it down.**
 
