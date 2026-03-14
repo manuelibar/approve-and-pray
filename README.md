@@ -1,5 +1,9 @@
 # Nobody Owns This Code
 
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/2d01f20f-aee6-46e0-a605-0f2981b711ae" alt="Nobody Owns This Code" width="100%" />
+</p>
+
 *By [Manuel Ibar](https://github.com/mibar) — March 2026*
 
 ---
