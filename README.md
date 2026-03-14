@@ -38,25 +38,23 @@ Marcus slept well that Friday night. The code he'd never read was working perfec
 
 ---
 
-It's Friday at 4:47 PM. A PR landed an hour ago — 847 lines changed across 23 files, generated in about twelve minutes by an agent that never gets tired, never gets distracted, and never second-guesses itself. The CI is green. You've been staring at it for forty minutes. You understand maybe 60% of what it does. The product owner pinged you twice about demo readiness. The team lead is asking why the sprint board still has three stories stuck "in review."
+**Leila** is a senior engineer at a Series B startup. It's Friday, 4:47 PM. A PR landed an hour ago — 847 lines changed across 23 files, generated in about twelve minutes by an agent that never gets tired, never gets distracted, and never second-guesses itself. The CI is green. She's been staring at it for forty minutes. She understands maybe 60% of what it does. The product owner pinged her twice about demo readiness. The team lead is asking why the sprint board still has three stories stuck "in review."
 
-You type "LGTM," hit merge, and feel a knot in your stomach you can't quite name.
+She types "LGTM," hits merge, and feels a knot in her stomach she can't quite name.
 
-You didn't rubber-stamp it. Rubber-stamping is lazy — it's the act of not caring. This was something more anxious and visceral. You *tried* to review it. Opened every file. Traced every function call you could follow. Cross-referenced the ticket. Checked the test assertions. And then hit the wall of your own cognitive bandwidth. You approved it anyway, because the alternative was blocking the entire team for another day, and there's a demo on Monday.
+She didn't rubber-stamp it. Rubber-stamping is lazy — it's the act of not caring. This was something more anxious and visceral. She *tried* to review it. Opened every file. Traced every function call she could follow. Cross-referenced the ticket. Checked the test assertions. And then hit the wall of her own cognitive bandwidth. She approved it anyway, because the alternative was blocking the entire team for another day, and there's a demo on Monday.
 
-You approved and prayed.
+She approved and prayed.
 
-Of the three, you're the closest to getting it right. You have the speed. You have some review. You have the instinct that something is wrong — that's what the knot is. What you don't have is a way to turn that instinct into a system. You're managing risk by prayer, and prayer is not an engineering practice.
-
-But what if you could keep the speed, keep the review where it matters, and replace the prayer with something you can actually measure?
+Of the three, Leila is the closest to getting it right. She has the speed. She has some review. She has the instinct that something is wrong — that's what the knot is. What she doesn't have is a way to turn that instinct into a system. She's managing risk by prayer, and prayer is not an engineering practice.
 
 ---
 
 There's a module in each of these codebases that will cause their next P1. When it breaks, someone will ask: "Who owns this?"
 
-Ana will raise her hand — along with 400 other files she's responsible for. Marcus won't even be in the room. You'll hesitate, because you approved it but you're not sure you understood it.
+Ana will raise her hand — along with 400 other files she's responsible for. Marcus won't even be in the room. Leila will hesitate, because she approved it but she's not sure she understood it.
 
-The numbers tell all three stories with uncomfortable precision. In 2025, [41% of code was already AI-generated](https://www.quantumrun.com/consulting/github-copilot-statistics/). By early 2026, teams using AI coding tools saw a [98% increase in PR volume with a 91% increase in review time](https://blog.logrocket.com/ai-coding-tools-shift-bottleneck-to-review/). Pull requests are [18% larger on average, and incidents per PR have climbed 24%](https://addyo.substack.com/p/code-review-in-the-age-of-ai). The [review bottleneck is already here](https://levelup.gitconnected.com/the-ai-code-review-bottleneck-is-already-here-most-teams-havent-noticed-1b75e96e6781), and most teams haven't noticed it — because for Ana the symptom looks like "being thorough," for Marcus it looks like "going fast," and for you it looks like "being pragmatic."
+The numbers tell all three stories with uncomfortable precision. In 2025, [41% of code was already AI-generated](https://www.quantumrun.com/consulting/github-copilot-statistics/). By early 2026, teams using AI coding tools saw a [98% increase in PR volume with a 91% increase in review time](https://blog.logrocket.com/ai-coding-tools-shift-bottleneck-to-review/). Pull requests are [18% larger on average, and incidents per PR have climbed 24%](https://addyo.substack.com/p/code-review-in-the-age-of-ai). The [review bottleneck is already here](https://levelup.gitconnected.com/the-ai-code-review-bottleneck-is-already-here-most-teams-havent-noticed-1b75e96e6781), and most teams haven't noticed it — because for Ana the symptom looks like "being thorough," for Marcus it looks like "going fast," and for Leila it looks like "being pragmatic."
 
 AI generation speed has increased roughly 10x in the last two years. Human comprehension speed has not increased at all. It can't. It's a biological constant — bounded by working memory, attention span, and the speed at which the human brain builds mental models of complex systems. Think of it as a mass casualty event arriving at an understaffed ER: code keeps coming in faster than any team can examine it, and the three stories are three different triage protocols.
 
@@ -64,11 +62,9 @@ Ana does a full diagnostic workup on every patient. Nobody leaves undertreated. 
 
 Marcus wheeled everyone straight to the wards without stopping at triage. The beds are full, the vitals dashboard looks stable, and he's never been busier shipping features. Nobody has actually been examined.
 
-You're triaging. Critical cases get your full attention. The stable-looking ones get "probably fine, move along." You know exactly which patients you eyeballed — you just can't go back and examine them without shutting down intake entirely.
+Leila is triaging. Critical cases get her full attention. The stable-looking ones get "probably fine, move along." She knows exactly which patients she eyeballed — she just can't go back and examine them without shutting down intake entirely.
 
-**Every approved-and-prayed PR permanently mints new cognitive debt — whether it took four minutes or fifteen days, whether one person approved it or five, whether the review was exhaustive or absent. Ana trades system comprehension for process compliance. Marcus trades it for velocity. You trade it for pragmatism. The exchange rate is getting worse every quarter, and none of you are paying it down.**
-
-What do we call code we don't *understand*?
+**Three teams, three strategies. Ana is doing everything right and drowning in it. Marcus is doing everything wrong and doesn't know it yet. Leila is doing something in between — the closest any of them gets to right, and it still ends with code in production that nobody fully understood. What they're each accumulating isn't technical debt in the old sense. Cunningham's metaphor assumed you understood the code you chose to defer. None of these three are deferring code they understood — code is entering production without being understood in the first place. We've had vocabulary and tooling for the first kind of liability for thirty years. The second kind is what this article is trying to name.**
 
 ---
 
@@ -90,7 +86,7 @@ Technical debt used to cause parallelization problems in a familiar way: accumul
 
 **We are trading debt we controlled — technical debt — for debt that accrues globally and lacks accountability.**
 
-You'd recognize this trade-off from 4:47 PM last Friday. You're doing what Cunningham described — shipping now, planning to come back later. But the code you're deferring isn't messy code you wrote and understood. It's clean code you never understood in the first place. Cunningham's metaphor assumed comprehension. That assumption just broke.
+Leila would recognize this trade-off from 4:47 PM last Friday. She's doing what Cunningham described — shipping now, planning to come back later. But the code she's deferring isn't messy code she wrote and understood. It's clean code she never understood in the first place. Cunningham's metaphor assumed comprehension. That assumption just broke.
 
 ---
 
@@ -110,7 +106,7 @@ Now let's return to those three Fridays.
 
 **Marcus doesn't have a backlog.** He doesn't have blocked teammates. He also doesn't have a knot in his stomach — and that's the problem. His code didn't pass through human review at all. It's not on any balance sheet. He can't point at the PRs he rushed because he didn't rush them — he never entered the loop. 12,000 lines running in production, and Marcus reviews outcomes, not implementations. "Who owns this code?" Marcus would say he does. He'd be wrong. He owns the *outcomes*. Nobody owns the *code*. This is **alien code** — code that bypassed human mapping entirely. Unknown unknowns. He'll discover it the way you discover a gas leak: when something explodes.
 
-**Remember that knot in your stomach? It has a name now.** Your 4:47 PM LGTM created **cognitive debt** — code you *know* you didn't fully understand, sitting in production. Known unknowns. You can point at the PRs you rushed. You remember which ones made you uneasy. You can measure it. You can choose to pay it down by going back, this time with coffee and no deadline, and actually reading what you approved. It's on the balance sheet. That's the one good thing about it — you know it's there. "Who owns this code?" You're not sure. But at least you know you're not sure.
+**Leila's knot has a name now.** Her 4:47 PM LGTM created **cognitive debt** — code she *knows* she didn't fully understand, sitting in production. Known unknowns. She can point at the PRs she rushed. She remembers which ones made her uneasy. She can measure it. She can choose to pay it down by going back, this time with coffee and no deadline, and actually reading what she approved. It's on the balance sheet. That's the one good thing about it — she knows it's there. "Who owns this code?" She's not sure. But at least she knows she's not sure.
 
 Cognitive debt is what you get when "who owns this?" has an uncertain answer. Alien code is what you get when the question has no answer at all.
 
@@ -170,7 +166,7 @@ The answer is in the middle: **Strategic Ignorance with Endorsement Tracking.** 
 
 Four principles:
 
-**1. Accept cognitive debt as a tool, not a failure.** Like financial debt: taking a mortgage isn't irresponsible. Not knowing you have a mortgage is. Your problem at 4:47 PM wasn't that you had cognitive debt — it's that you didn't know how much or where.
+**1. Accept cognitive debt as a tool, not a failure.** Like financial debt: taking a mortgage isn't irresponsible. Not knowing you have a mortgage is. Leila's problem at 4:47 PM wasn't that she had cognitive debt — it's that she didn't know how much or where.
 
 **2. Draw the comprehension boundary deliberately.** Your Tier-1 critical path — payments, auth, core data: less than 20% cognitive debt. Business logic and integrations: up to 40%. Internal tools and utilities: 70% is fine. Generated code, lock files, build artifacts: excluded entirely. This is Strategic Ignorance — conscious triage, not negligence.
 
@@ -180,7 +176,7 @@ Four principles:
 
 What does this look like for each of them?
 
-You keep your speed. You accept some cognitive debt. But you *know* where it is, you track it, and you set limits. Your heatmap has honest patches of red and green. The red is intentional.
+Leila keeps her speed. She accepts some cognitive debt. But she *knows* where it is, she tracks it, and she sets limits. Her heatmap has honest patches of red and green. The red is intentional.
 
 Ana stops reviewing every PR and starts endorsing modules. Her review queue unblocks. The pipeline gates on cognitive debt thresholds, not on her personal approval. She goes home at 6 PM. Her Slack is quiet.
 
@@ -222,7 +218,7 @@ The core model rests on a few principles:
 
 **AST-level resilience.** Endorsements must survive cosmetic changes but invalidate on structural ones. If someone reformats a file, renames a variable, or adjusts whitespace, the endorsement should stand — the logic hasn't changed. But if someone (or some agent) modifies the control flow, changes the algorithm, or alters the data model, the endorsement must be stripped. This requires tracking AST hashes rather than raw text. It's the difference between "the code looks different" and "the code *is* different."
 
-**The living heatmap.** Imagine the codebase as a living heatmap of human comprehension. Endorsed areas glow green. Unendorsed areas are red. The heatmap shifts in real time as people join, leave, or as agents modify code. Your codebase: honest patches of red and green. Ana's: mostly green, finally. Marcus's: still red, but now he *knows* it's red. This is the dashboard that should sit alongside DORA metrics and uptime monitors — a real-time view of *where human knowledge lives* in your system.
+**The living heatmap.** Imagine the codebase as a living heatmap of human comprehension. Endorsed areas glow green. Unendorsed areas are red. The heatmap shifts in real time as people join, leave, or as agents modify code. Leila's codebase: honest patches of red and green. Ana's: mostly green, finally. Marcus's: still red, but now he *knows* it's red. This is the dashboard that should sit alongside DORA metrics and uptime monitors — a real-time view of *where human knowledge lives* in your system.
 
 **KPI target anchor.** As a starting point for discussion: aim for less than 20% cognitive debt on Tier-1 critical-path services. Track it over time on engineering dashboards alongside DORA metrics, test coverage, and incident rates. A developer tools microservice can tolerate 60% cognitive debt. Your payment gateway cannot.
 
@@ -403,7 +399,7 @@ When the P1 hits at 3 AM — and it will — someone will ask "who owns this?"
 
 Ana will raise her hand. She endorsed this module. She can explain it. But the fix touches a module that's been in her review queue for two weeks — one she hasn't endorsed yet.
 
-You open the failing module and recognize the PR you approved at 4:47 PM. The knot in your stomach was right.
+Leila opens the failing module and recognizes the PR she approved at 4:47 PM. The knot in her stomach was right.
 
 Marcus opens a module no human has ever seen and starts learning the system during a production incident.
 
