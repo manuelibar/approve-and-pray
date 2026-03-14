@@ -233,7 +233,7 @@ Both are worth tracking. Most teams only track the first and call it the second.
 
 **Community endorsement as exploration.** A new engineer onboarding onto Ana's team spends a week reading the payment module. Under the current model, that's ramp-up cost. Under VOUCH, that's *debt repayment*. They endorse the module. Two people understand it now. **Onboarding is not dead time — it is debt repayment.** Every hour a new hire spends genuinely understanding a module reduces the team's cognitive debt. That's not a cost center; it's an investment with measurable returns on the dashboard.
 
-**AST-level resilience.** Endorsements must survive cosmetic changes but invalidate on structural ones. If someone reformats a file, renames a variable, or adjusts whitespace, the endorsement should stand — the logic hasn't changed. But if someone (or some agent) modifies the control flow, changes the algorithm, or alters the data model, the endorsement must be stripped. This requires tracking AST hashes rather than raw text. It's the difference between "the code looks different" and "the code *is* different."
+**Cosmetic-resilient invalidation.** Endorsements survive cosmetic changes — formatting, whitespace, comment edits, file renames, code moving within the project structure. They invalidate on structural changes — logic, control flow, data model. The protocol states this requirement. How an implementation detects the difference is its own concern. It's the difference between "the code looks different" and "the code *is* different."
 
 **The living heatmap.** Imagine the codebase as a living heatmap of human comprehension. Endorsed areas glow green. Unendorsed areas are red. The heatmap shifts in real time as people join, leave, or as agents modify code. Leila's codebase: honest patches of red and green. Ana's: mostly green, finally. Marcus's: still red, but now he *knows* it's red. This is the dashboard that should sit alongside DORA metrics and uptime monitors — a real-time view of *where human knowledge lives* in your system.
 
@@ -252,11 +252,14 @@ The atomic unit of the protocol is the **Endorsement Record** — a structured d
 ```
 {
   "version":    "0.1",
+  "commit":     "abc123def456...",
   "file_path":  "src/payment/gateway.go",
-  "ast_hash":   "sha256:a7f3b2c1d4e5...",
   "endorser":   "mibar",
   "timestamp":  "2026-03-14T16:30:00Z",
-  "scope":      "full",
+  "lines": {
+    "endorsed": [[1, 89], [148, 200]],
+    "reviewed": [[90, 102]]
+  },
   "note":       ""
 }
 ```
@@ -264,12 +267,12 @@ The atomic unit of the protocol is the **Endorsement Record** — a structured d
 Fields:
 
 - **`version`** — Protocol version. Allows forward-compatible evolution.
+- **`commit`** — The git commit hash the endorser was positioned at. The anchor: "I reviewed this file as it existed at this commit."
 - **`file_path`** — Relative path from repository root.
-- **`ast_hash`** — Hash of the file's abstract syntax tree (not its text). Algorithm and granularity defined by the implementation; the protocol requires only that cosmetic changes (whitespace, formatting, comments) MUST NOT invalidate the hash, and structural changes (logic, control flow, data model) MUST invalidate it.
 - **`endorser`** — Human identity. Maps to the git author or a configured alias. Non-human agents MUST NOT appear in this field.
 - **`timestamp`** — ISO 8601 UTC. When the endorsement was recorded.
-- **`scope`** — One of `full` (entire file), `partial` (specific functions/blocks — future extension), or `interface` (public API surface only, internals deliberately unendorsed).
-- **`note`** — Optional free-text. Intended for context: "Endorsed after security audit Q1-2026" or "Interface only — internals are vendored crypto."
+- **`lines`** — Optional. If absent, the full file is endorsed. If present, a map with two keys: `endorsed` (line ranges the endorser vouches for) and `reviewed` (seen but not vouched). Line ranges are inclusive `[start, end]` pairs. Lines not covered by either key are `unknown`. These three states map directly to the framework: `endorsed` = owned, `reviewed` = cognitive debt, `unknown` = alien code.
+- **`note`** — Optional free-text. Intended for context: "Endorsed after security audit Q1-2026."
 
 #### Operations
 
@@ -287,9 +290,9 @@ The protocol defines four operations:
 
 Endorsements are not permanent. The protocol defines three invalidation triggers:
 
-1. **Structural change.** When the AST hash of an endorsed file changes — meaning actual logic, control flow, or data model changed — all endorsements for that file are invalidated. The record is preserved but marked `invalidated: structural_change`, allowing fast re-endorsement if the change was minor.
+1. **Structural change.** When the logic, control flow, or data model of endorsed lines changes, the endorsements covering those lines are invalidated. The record is preserved but marked `invalidated: structural_change`. Endorsements on unchanged lines survive.
 
-   What does NOT trigger eviction: formatter runs, whitespace changes, comment edits, file renames, or code moving within the project structure. An endorsement survives a `gofmt` pass. It survives a file moving from `src/payment/gateway.go` to `pkg/payment/gateway.go`. It does not survive a change to the retry logic or error handling inside that gateway. The AST hash makes this deterministic — either the structure changed, or it didn't.
+   What does NOT trigger eviction: formatter runs, whitespace changes, comment edits, file renames, code moving within the project structure. An endorsement survives a `gofmt` pass and survives a file moving from `src/payment/gateway.go` to `pkg/payment/gateway.go`. It does not survive a change to the control flow within the endorsed lines. The implementation is responsible for detecting the difference; the protocol mandates the behavior.
 
 2. **Endorser departure.** When an endorser is removed from the team roster (however that's managed), their endorsements SHOULD be marked `at_risk` rather than immediately invalidated. The knowledge may still be reachable (the person might be in another team, or contactable), but the endorsement's operational value is degraded.
 
@@ -301,6 +304,22 @@ Not all code changes require endorsement re-evaluation:
 
 - **Conventional Commit prefixes.** Commits with `style:`, `chore:`, `ci:`, or `docs:` prefixes bypass endorsement invalidation. The assumption: these commits don't change program logic. If they do, the prefix is wrong — that's a process problem, not a protocol problem.
 - **`.vouchignore`** — A file using gitignore syntax that excludes paths and patterns from cognitive debt calculation entirely. Generated code, lock files, vendored dependencies, build artifacts. These are Alien Code by design. Including them would inflate the metric and dilute its signal.
+
+#### Materialized State
+
+Individual endorsement records are the source of truth — append-only, one per endorsement act. But computing coverage from raw records requires traversing history. The protocol therefore requires implementations to maintain a **materialized state**: a pre-computed summary of current endorsement coverage that can be read in O(1).
+
+The materialized state MUST be updated atomically with each endorsement operation. Implementations SHOULD use a **git hook** (post-commit, post-merge, post-checkout) to keep it current automatically, without requiring a manual rebuild step. The materialized state is derived data — it can always be rebuilt from the endorsement records. CI reads the materialized state, not the raw records.
+
+#### Configuration Contract
+
+The protocol recognizes an implementation-defined configuration file (`.vouchrc` or equivalent) that specifies:
+
+- **Directory scopes** — which paths are subject to endorsement tracking.
+- **Exclusion patterns** — paths excluded from coverage calculation, with richer syntax than `.vouchignore`.
+- **Threshold definitions** — per-tier cognitive debt and alien code thresholds used by CI gates.
+
+This file SHOULD be committed to the repository and versioned alongside the code it governs.
 
 #### Storage Requirements
 
@@ -330,26 +349,64 @@ Intellectual honesty demands acknowledging the limitations:
 
 ### The CLI
 
-The simplest interaction:
+Writing an endorsement:
 
 ```bash
 vouch endorse src/payment/gateway.go
 ```
 
-You're telling the system: "I have reviewed this file. I understand what it does. I'm willing to be the point of contact." You do this as part of your workflow — not as a separate ceremony.
+You're positioned at the current commit. You're telling the system: "I have reviewed this file. I understand what it does. I am responsible for it." Line ranges default to the full file; an agent-assisted review session can produce granular line-level records instead.
 
-If you don't endorse, nothing breaks. The code ships normally. The committer is recorded as the author (standard git behavior), and the code is flagged as *unendorsed*. That's all. No gates, no blocks — just signal.
+If you don't endorse, nothing breaks. The code ships. The committer is recorded as author (standard git behavior), the file is flagged as *unendorsed*. No gates, no blocks — just signal.
 
-Query the debt:
+**Inspecting ownership — `vouch ls`:**
 
-```bash
-vouch report src/payment/
-# Cognitive Debt: 34% (src/payment/)
-# 12 files, 8 endorsed, 4 unendorsed
-# 2 endorsements invalidated (structural changes since last endorsement)
+```
+$ vouch ls src/payment/
+ENDORSED  REVIEWED  UNKNOWN  FILE                   OWNERS
+    87%       8%       5%    gateway.go             mibar, sarah
+    45%       0%      55%    processor.go           mibar
+     0%      23%      77%    webhook_handler.go     —
+   100%       0%       0%    types.go               sarah
 ```
 
-**Storage: git notes.** Endorsement data lives in [git notes](https://git-scm.com/docs/git-notes) — metadata attached to git objects without modifying the commit history. No manifest files cluttering the repo. No merge conflicts from competing endorsement edits. The data travels with the repository. Each endorsement is stored as a JSON record per the protocol spec. The `ast_hash` is computed via [tree-sitter](https://tree-sitter.github.io/) — a parser generator that supports 40+ languages and produces concrete syntax trees. By hashing AST nodes rather than full trees, cosmetic changes produce the same hash while structural changes produce a new one.
+Defaults to CWD if no path is given. Use `--dir` (`-d`) to scope explicitly. Three columns map directly to the framework: `ENDORSED` (owned), `REVIEWED` (cognitive debt), `UNKNOWN` (alien code).
+
+For line-level detail on a specific file:
+
+```
+$ vouch ls -a src/payment/gateway.go
+LINES     STATE       OWNERS          AGE
+1-89      endorsed    mibar, sarah    3w
+90-102    reviewed    sarah           1w
+103-147   unknown     —               —
+148-200   endorsed    mibar           3w
+```
+
+**Scanning coverage — `vouch stats`:**
+
+```bash
+$ vouch stats --dir src/ --exclude "**/*.test.go"
+Endorsed:        70%
+Cognitive Debt:  18%  (reviewed, unendorsed)
+Alien Code:      12%  (never seen)
+Tier-1 threshold: 20%  ✓
+
+$ vouch stats --config .vouchrc   # use project config for dirs, excludes, thresholds
+```
+
+`vouch stats` is the CI-facing command. `vouch ls` is the human-facing command. Same underlying data, different presentation.
+
+**Storage: git notes.** Endorsement data lives in [git notes](https://git-scm.com/docs/git-notes) — metadata attached to git objects without modifying the commit history. No merge conflicts. The data travels with the repository. Each endorsement is stored as a JSON record per the protocol spec, anchored to a commit hash and scoped to line ranges. A separate `refs/notes/vouch-state` note on HEAD holds the materialized current state — what CI reads.
+
+**Git hook — keeping the materialized state current:**
+
+```bash
+# .git/hooks/post-commit  (also post-merge, post-checkout)
+vouch sync
+```
+
+`vouch sync` rebuilds the materialized state from endorsement records and writes it to `refs/notes/vouch-state`. With this hook in place, coverage is always fresh — no manual rebuild, no stale CI reads. It's the bridge between the append-only write path and the O(1) read that CI needs.
 
 ### The Agent Skill
 
@@ -363,13 +420,13 @@ The real power isn't the CLI alone — it's the `vouch` skill integrated into ag
 
 ### Ana's Monday Morning
 
-Ana opens her terminal. She runs `vouch report --tier 1`. The dashboard shows: Payment service: 22% cognitive debt. Auth service: 14%. Core data: 31%.
+Ana opens her terminal. She runs `vouch stats --config .vouchrc`. Three lines come back above threshold: the payment service is at 22%, auth at 14%, core data at 31%.
 
-Core data is above threshold. She checks why: an agent refactored the query optimizer last Thursday. The change invalidated her endorsement and her colleague Marco's. Nobody has re-endorsed yet.
+She runs `vouch ls src/core/` to find the culprit. The query optimizer is red — unknown across 60% of its lines. An agent refactored it last Thursday. The change invalidated her endorsement and her colleague Marco's. Nobody has re-endorsed yet.
 
-She opens the module. It's 400 lines. She asks her coding agent: "explain src/core/query_optimizer.go". The agent walks her through the changes: "The refactor replaced the nested loop join selection with a cost-based optimizer. The core logic changed in three functions. Here's what each one does and why."
+She runs `vouch ls -a src/core/query_optimizer.go`. She can see exactly which line ranges went dark. She opens the file, asks her coding agent to walk her through what changed: "The refactor replaced the nested loop join selection with a cost-based optimizer. Core logic changed in three functions. Here's what each one does and why."
 
-Ana reads the explanation, traces the code, runs the tests herself, and satisfies herself that the logic is sound. She runs `vouch endorse src/core/query_optimizer.go`. The dashboard updates: Core data: 19%. Below threshold. Green.
+Ana reads the explanation, traces the code, runs the tests herself. She runs `vouch endorse src/core/query_optimizer.go`. `vouch stats` updates: core data 19%. Below threshold. Green.
 
 It's 10:15 AM. She moves on to feature work. No PR queue. No blocked teammates. No Slack escalations.
 
@@ -391,20 +448,26 @@ These are real tradeoffs, not dealbreakers. If you have a better storage mechani
 
 ### CI/CD integration
 
-Where `vouch` becomes operationally powerful is as a CI/CD gatekeeper. Define cognitive debt thresholds per service tier:
+Where `vouch` becomes operationally powerful is as a CI/CD gatekeeper. The `.vouchrc` defines directory scopes, exclusions, and thresholds in one place:
 
 ```yaml
-# .vouch.yml
-thresholds:
-  tier-1:  # Payment, auth, core data
+# .vouchrc
+tiers:
+  - name: critical
+    paths: [src/payment/, src/auth/]
     max_cognitive_debt: 20%
-  tier-2:  # Business logic, integrations
+    max_alien_code: 5%
+  - name: business
+    paths: [src/]
     max_cognitive_debt: 40%
-  tier-3:  # Internal tools, dev utilities
-    max_cognitive_debt: 70%
+    max_alien_code: 20%
+
+exclude:
+  - "**/*.test.go"
+  - "**/generated/**"
 ```
 
-If a PR drops human endorsement of a Tier-1 critical service below the threshold, the pipeline fails. Same principle as coverage gates, but measuring comprehension, not test execution. The PR author sees: "This change introduces 450 lines of unendorsed code in a Tier-1 service. Current cognitive debt: 23% (threshold: 20%). Please endorse or request endorsement before merging."
+CI runs `vouch stats --config .vouchrc`. If any tier exceeds its threshold, the pipeline fails. The PR author sees: "This change introduces 450 lines of unendorsed code in a Tier-1 service. Cognitive debt: 23% (threshold: 20%). Alien code: 7% (threshold: 5%). Endorse or request endorsement before merging."
 
 ### Agentic-assisted reviews
 
