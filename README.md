@@ -68,6 +68,8 @@ Leila is triaging. Critical cases get her full attention. The stable-looking one
 
 ## 2. A Brief History of Owing the Compiler Money
 
+#### The Original Contract
+
 In 1992, Ward Cunningham stood up at [OOPSLA and introduced the debt metaphor](https://c2.com/doc/oopsla92.html) while explaining the design decisions behind the WyCash portfolio management system. The idea was simple and powerful: sometimes you ship code you know isn't ideal because the business value of shipping now outweighs the cost of cleaning up later. You're borrowing against the future. As long as you pay it back — refactor, rewrite, clean up — the debt is manageable. If you don't, the interest compounds until the codebase becomes unmaintainable.
 
 That metaphor changed how we talk about software. [Martin Fowler](https://martinfowler.com/bliki/TechnicalDebt.html) formalized it. Entire organizations built dashboards around it. "Technical debt" entered the vocabulary of product managers, CTOs, and board members who'd never written a line of code but intuitively understood what it meant to borrow against the future. For thirty years, it was the right abstraction.
@@ -76,9 +78,15 @@ But it carried an implicit assumption that nobody questioned because it was alwa
 
 Technical debt is a conscious trade-off. You wrote the module. You know it's messy. You know the edge cases it doesn't handle. You ship it anyway because the deadline matters more than elegance right now, and you plan to come back. The debt is intentional, localized, and — critically — understood by the person who incurred it. That understanding is what makes it manageable. You know exactly what you owe and where the bodies are buried.
 
+#### Vocabulary Evolves
+
 The vocabulary evolves because the practice evolves. In February 2025, Andrej Karpathy coined ["vibe coding"](https://x.com/karpathy/status/1886192184808149383) — describing the experience of programming by feel with AI, barely reading the generated code, just running it until it works. It captured something real: the seductive efficiency of not needing to understand every line. Marcus would recognize this description instantly — it's not a weekend experiment for him; it's his production workflow. A year later, Karpathy [walked it back](https://thenewstack.io/vibe-coding-is-passe/): "Vibe coding is passé." The industry is converging on "harness engineering" — the idea that agents need guardrails, not freedom. Marcus hasn't read the memo yet.
 
+#### Where the Metaphor Breaks
+
 And here's where Cunningham's metaphor reaches its breaking point. With agents, "refactoring later" becomes automated. An agent rewrites a legacy module overnight. Another agent picks up the tech debt it left behind. The TODO comments get resolved. The deprecated APIs get updated. The linter warnings disappear. The test coverage goes up. Technical debt drops to near zero on paper — the agents are tireless, thorough, and cheap. But the sheer volume of code implemented by this automation is staggering — and nobody reviewed any of it. The debt on the spreadsheet is gone. The understanding never existed. We've paid off the credit card by taking out a mortgage we don't fully understand the terms of.
+
+#### A Worse Parallelization Problem
 
 Technical debt used to cause parallelization problems in a familiar way: accumulated cruft slowed everyone down. You couldn't add a feature without untangling the mess. Now we have a *worse* parallelization problem. During incidents, security audits, or onboarding, multiple teams hit the same wall at the same time — nobody understands the code. The cruft is gone. The system is clean, well-tested, beautifully formatted, and completely opaque to every human being responsible for it.
 
@@ -98,13 +106,23 @@ In February 2026, [Margaret-Anne Storey](https://margaretstorey.com/blog/2026/02
 
 What happened next is telling: [at least five independent groups](https://byteiota.com/cognitive-debt-ai-coding-agents-outpace-comprehension-5-7x/) converged on the same concept within the same quarter. Different names, same pain. [CodeRabbit](https://www.coderabbit.ai/blog/2025-was-the-year-of-ai-speed-2026-will-be-the-year-of-ai-quality/) called 2025 "the year of AI speed" and 2026 "the year of AI quality." Others called it the "comprehension gap" or the "velocity-understanding divergence." The convergence itself is diagnostic — when that many people independently name the same problem, the problem is real and the pain is universal.
 
-Now let's return to those three Fridays.
+Now let's return to those three Fridays. But first, two terms that will structure what follows.
+
+> **Cognitive Debt** = the percentage of lines of code in production that have not been explicitly reviewed, understood, and endorsed by a human.
+
+Think of it as the inverse of code coverage, but for human comprehension. We've spent decades measuring what machines have tested. We have never systematically measured what humans have understood. Code coverage asks: "Has a machine exercised this line?" Cognitive debt asks: "Has a human understood this line?" Both questions matter. Only one has tooling.
+
+**Alien code** is the extreme case: code that bypassed human mapping entirely. Unknown unknowns. It was never reviewed, never questioned, never entered anyone's mental model. You discover it during an incident, and the discovery itself is the incident.
+
+The distinction matters operationally because they require different responses. Cognitive debt is manageable — you know about it, you can prioritize it, you can assign someone to review it. It shows up in the dashboard with a number next to it. Alien code is dangerous precisely because you don't even know it's there. It doesn't show up on any dashboard because nobody knows to look for it.
+
+With those definitions in hand, the three Fridays come into focus.
 
 **Ana's team is the tragic case.** They don't have cognitive debt — they review everything. Ana hasn't approved a line she didn't understand. And her reward is a Slack full of blocked teammates, a sprint velocity that's dropping despite record implementation speed, and a growing suspicion from leadership that her team "isn't adapting fast enough." "Who owns this code?" — Ana does. All of it. That's the problem. The question her organization needs to answer isn't "how do we review faster?" — it's "what genuinely needs human understanding and what doesn't?"
 
-**Marcus doesn't have a backlog.** He doesn't have blocked teammates. He also doesn't have a knot in his stomach — and that's the problem. His code didn't pass through human review at all. It's not on any balance sheet. He can't point at the PRs he rushed because he didn't rush them — he never entered the loop. 12,000 lines running in production, and Marcus reviews outcomes, not implementations. "Who owns this code?" Marcus would say he does. He'd be wrong. He owns the *outcomes*. Nobody owns the *code*. This is **alien code** — code that bypassed human mapping entirely. Unknown unknowns. He'll discover it the way you discover a gas leak: when something explodes.
+**Marcus doesn't have a backlog.** He doesn't have blocked teammates. He also doesn't have a knot in his stomach — and that's the problem. His code didn't pass through human review at all. It's not on any balance sheet. He can't point at the PRs he rushed because he didn't rush them — he never entered the loop. 12,000 lines running in production, and Marcus reviews outcomes, not implementations. "Who owns this code?" Marcus would say he does. He'd be wrong. He owns the *outcomes*. Nobody owns the *code*. Pure alien code. He'll discover it the way you discover a gas leak: when something explodes.
 
-**Leila's knot has a name now.** Her 4:47 PM LGTM created **cognitive debt** — code she *knows* she didn't fully understand, sitting in production. Known unknowns. She can point at the PRs she rushed. She remembers which ones made her uneasy.
+**Leila's knot has a name now.** Her 4:47 PM LGTM created cognitive debt — known unknowns. She can point at the PRs she rushed. She remembers which ones made her uneasy.
 
 For now. She approved twelve like that last month. Her teammate approved eight more. By next quarter she won't remember which specific PRs gave her that knot — she'll just carry a vague sense that there are things she doesn't understand somewhere in the codebase. Cognitive debt is only manageable if it's actually tracked. Right now the only tracking system she has is her memory, and her memory is already losing the list.
 
@@ -113,14 +131,6 @@ How many Leilas are on her team doing the same math? How many quiet LGTMs happen
 "Who owns this code?" She's not sure. But at least she knows she's not sure — and that's the entire difference between her situation and Marcus's. The question came up. The answer just never got written down.
 
 Cognitive debt is when "who owns this?" gets asked and the honest answer is: nobody. The question came up. The gap is visible. Alien code is when the question never came up at all.
-
-For the purposes of this article — and for measurement — I'll define cognitive debt concretely:
-
-> **Cognitive Debt** = the percentage of lines of code in production that have not been explicitly reviewed, understood, and endorsed by a human.
-
-Think of it as the inverse of code coverage, but for human comprehension. We've spent decades measuring what machines have tested. We have never systematically measured what humans have understood. Code coverage asks: "Has a machine exercised this line?" Cognitive debt asks: "Has a human understood this line?" Both questions matter. Only one has tooling.
-
-The distinction between cognitive debt and alien code matters operationally because they require different responses. Cognitive debt is manageable — you know about it, you can prioritize it, you can assign someone to review it. It shows up in the dashboard with a number next to it. Alien code is dangerous precisely because you don't even know it's there. It doesn't show up on any dashboard because nobody knows to look for it. You discover it during an incident, and the discovery itself is the incident.
 
 And then there's the illusion of green tests. Agents write syntactically flawless tests for logically flawed assumptions. The test suite passes brilliantly. The coverage number is pristine. The code does precisely the wrong thing, and the tests enthusiastically confirm it. A data transformation introduces a subtle rounding error in currency calculations — and the agent-generated test suite asserts, correctly, that the function returns exactly the wrong value. The test is perfect. The assumption is catastrophic. And nobody caught it because the coverage report said 94%.
 
@@ -208,7 +218,7 @@ Let's look at the tools we have and why they fall short.
 
 **Commit messages** are cryptic when written by hurried humans and generic when written by AI. "Refactor authentication module to improve maintainability" tells you nothing about what actually changed, what trade-offs were made, or whether anyone could explain the module under pressure.
 
-All of these tools track **authorship** and **routing**. In 2026, authorship is increasingly a fiction and routing is a notification. Neither is a comprehension signal. That gap is what the VOUCH framework — and the VOUCH Protocol — aim to fill.
+All of these tools track **authorship** and **routing**. In 2026, authorship is increasingly a fiction and routing is a notification. Neither is a comprehension signal. That gap is what the VOUCH framework aims to fill.
 
 ### The VOUCH Framework
 
@@ -216,130 +226,82 @@ All of these tools track **authorship** and **routing**. In 2026, authorship is 
 
 The core model rests on a few principles:
 
-**Committer = Author by default.** When you or an agent commits code, git records authorship. Nothing changes here. VOUCH doesn't replace git — it adds a layer on top.
+#### Committer = Author by Default
 
-**Authorship is not endorsement — by default and by design.** Committing code MUST NOT auto-create an endorsement. The act of writing a change and the act of vouching for it are separate, deliberate acts. A developer can — and often should — commit code without endorsing it: prototypes, exploratory work, agent-generated sections they haven't fully reviewed, changes that need a second pair of eyes. The endorsement is the moment of ownership declaration. The commit is not. An agent authors code. A developer commits code. A human endorses it. The protocol keeps these three roles distinct. Nothing in the write path implies anything about the comprehension path.
+When you or an agent commits code, git records authorship. Nothing changes here. VOUCH doesn't replace git — it adds a layer on top.
 
-**Revocation and Retraction.** Nobody can directly remove someone else's endorsement. The only thing that revokes an endorsement is the code changing underneath it. When a commit introduces non-cosmetic changes to lines you endorsed, those endorsements are **soft-deleted** by the system: the records are preserved but marked `revoked`, and the coverage those lines represented drops to zero immediately.
+#### Authorship Is Not Endorsement
 
-The endorser discovers this the next time they query endorsement state. At that point they have two options: **re-endorse** (reviewed the diff, understand the new state, still own it) or **retract** (voluntarily withdraw from this file or these lines).
+Committing code does not create an endorsement. The act of writing a change and the act of vouching for it are separate, deliberate acts. An agent authors code. A developer commits code. A human endorses it. The framework keeps these three roles distinct. Nothing in the write path implies anything about the comprehension path.
 
-**Retract** is a personal act. Only you can retract your own endorsement. **Revocation** is what the system does to your endorsement when the code changes underneath you. The distinction matters: revocations are events that happened to your endorsement; retractions are decisions you made about it.
+#### Revocation and Retraction
 
-**Two distinct measurements.** VOUCH tracks two things that are easy to conflate and critical to keep separate:
+Nobody can directly remove someone else's endorsement. The only thing that revokes an endorsement is the code changing underneath it — non-cosmetic changes to endorsed lines trigger soft-deletion. The endorser discovers this the next time they check, and decides: re-endorse after reviewing the diff, or retract and let the lines sit as known cognitive debt.
+
+**Retract** is a personal act — only you can withdraw your own endorsement. **Revocation** is what the system does when code changes beneath you. The distinction matters: revocations are events that happened to your endorsement; retractions are decisions you made about it.
+
+#### Two Distinct Measurements
+
+VOUCH tracks two signals that are easy to conflate and critical to keep separate:
 
 - **Review** — someone saw this code, ran the tests, and signed off. The `LGTM` claim. A weaker signal: "I was present."
 - **Endorsement** — someone understands this code and owns it. They can explain it at 3 AM, answer questions about its design decisions, and be paged when it breaks. The stronger claim: "I am responsible."
 
-Both are worth tracking. Most teams only track the first and call it the second. The VOUCH Protocol records both signals separately — a file can be reviewed without being endorsed, and that distinction is exactly what the heatmap makes visible.
+Both are worth tracking. Most teams only track the first and call it the second. The framework records both signals separately — a file can be reviewed without being endorsed, and that distinction is exactly what the heatmap makes visible.
 
-**Escape hatches for noise.** Not every commit needs endorsement tracking. Formatter runs, CI configuration changes, dependency bumps — these create noise if you track them. Commits tagged `style:`, `chore:`, or `ci:` bypass endorsement tracking entirely.
+#### Escape Hatches for Noise
 
-**Community endorsement as exploration.** A new engineer onboarding onto Ana's team spends a week reading the payment module. Under the current model, that's ramp-up cost. Under VOUCH, that's *debt repayment*. They endorse the module. Two people understand it now. **Onboarding is not dead time — it is debt repayment.** Every hour a new hire spends genuinely understanding a module reduces the team's cognitive debt. That's not a cost center; it's an investment with measurable returns on the dashboard.
+Not every commit needs endorsement tracking. Commits tagged `style:`, `chore:`, or `ci:` bypass endorsement tracking entirely. A `.vouchignore` file declares patterns excluded from the cognitive debt calculation — generated code, lock files, vendored dependencies, build artifacts. These are alien code by design.
 
-**Cosmetic-resilient invalidation.** Endorsements survive cosmetic changes — formatting, whitespace, comment edits, file renames, code moving within the project structure. They invalidate on structural changes — logic, control flow, data model. The protocol states this requirement. How an implementation detects the difference is its own concern. It's the difference between "the code looks different" and "the code *is* different."
+#### Community Endorsement as Exploration
 
-**The living heatmap.** Imagine the codebase as a living heatmap of human comprehension. Endorsed areas glow green. Unendorsed areas are red. The heatmap shifts in real time as people join, leave, or as agents modify code. Leila's codebase: honest patches of red and green. Ana's: mostly green, finally. Marcus's: still red, but now he *knows* it's red. This is the dashboard that should sit alongside DORA metrics and uptime monitors — a real-time view of *where human knowledge lives* in your system.
+A new engineer onboarding onto Ana's team spends a week reading the payment module. Under the current model, that's ramp-up cost. Under VOUCH, that's *debt repayment*. They endorse the module. Two people understand it now. **Onboarding is not dead time — it is debt repayment.** Every hour a new hire spends genuinely understanding a module reduces the team's cognitive debt. That's not a cost center; it's an investment with measurable returns on the dashboard.
 
-**KPI target anchor.** As a starting point for discussion: aim for less than 20% cognitive debt on Tier-1 critical-path services. Track it over time on engineering dashboards alongside DORA metrics, test coverage, and incident rates. A developer tools microservice can tolerate 60% cognitive debt. Your payment gateway cannot.
+#### Cosmetic-Resilient Invalidation
 
-**Knowledge concentration risk.** VOUCH makes bus factor measurable. A codebase where one engineer endorses 80% of the critical path isn't safer than one with 80% cognitive debt — it's differently fragile. The framework requires tracking not just *how much* is covered but *how distributed* that coverage is. Any single endorser holding more than a configurable threshold of critical-path coverage is a systemic risk: one departure, one context-switch, one extended absence away from a coverage crisis. This concentration metric belongs on the same dashboard as cognitive debt. It answers a question no existing tool asks: *what happens to comprehension coverage if this person leaves tomorrow?*
+Endorsements survive cosmetic changes — formatting, whitespace, comment edits, file renames, code moving within the project structure. They invalidate on structural changes — logic, control flow, data model. It's the difference between "the code looks different" and "the code *is* different."
 
-**Structured endorsement transfer.** When an endorser is transitioning — leaving the team, changing roles, going on extended leave — the protocol supports a formal handoff: the outgoing endorser designates one or more successors and maps their endorsements to specific people or scopes. This creates a *transfer request*, not an automatic transfer. The designees must actively review and endorse to complete it. But it creates institutional memory: what needs attention, who should look at what, in what order. An endorsement plan — a single transition split across several people — is a legitimate and supported pattern. The saddest version of this scenario is one where the endorser is already gone. The system surfaces the gap through `at_risk` endorsements. The knowledge doesn't disappear — it's recoverable from the code itself, the commit history, the design patterns. But it costs time, and it costs more time without tooling that helps reconstruct what the original owner understood.
+#### The Living Heatmap
 
-### The VOUCH Protocol (v0.1)
+Imagine the codebase as a living heatmap of human comprehension. Endorsed areas glow green. Unendorsed areas are red. The heatmap shifts in real time as people join, leave, or as agents modify code. Leila's codebase: honest patches of red and green. Ana's: mostly green, finally. Marcus's: still red, but now he *knows* it's red. This is the dashboard that should sit alongside DORA metrics and uptime monitors — a real-time view of *where human knowledge lives* in your system.
 
-The framework needs a protocol — a formal specification that implementations can target. What follows is v0.1: deliberately minimal, intentionally incomplete, designed to be broken and improved by the community.
+#### KPI Target Anchor
 
-#### Endorsement Record
+As a starting point: aim for less than 20% cognitive debt on Tier-1 critical-path services. A developer tools microservice can tolerate 60%. Your payment gateway cannot. Track it over time alongside DORA metrics, test coverage, and incident rates.
 
-The atomic unit of the protocol is the **Endorsement Record** — a structured declaration that a human has reviewed and understood a specific piece of code at a specific point in its structural history.
+#### Knowledge Concentration Risk
 
-```
-{
-  "version":    "0.1",
-  "commit":     "abc123def456...",
-  "file_path":  "src/payment/gateway.go",
-  "endorser":   "mibar",
-  "timestamp":  "2026-03-14T16:30:00Z",
-  "lines": {
-    "endorsed": [[1, 89], [148, 200]],
-    "reviewed": [[90, 102]]
-  },
-  "note":       ""
-}
-```
+VOUCH makes bus factor measurable. A codebase where one engineer endorses 80% of the critical path isn't safer than one with 80% cognitive debt — it's differently fragile. The framework requires tracking not just *how much* is covered but *how distributed* that coverage is. Any single endorser holding more than a configurable threshold of critical-path coverage is a systemic risk: one departure away from a coverage crisis. This concentration metric belongs on the same dashboard as cognitive debt.
 
-Fields:
+#### Structured Endorsement Transfer
 
-- **`version`** — Protocol version. Allows forward-compatible evolution.
-- **`commit`** — The commit identifier the endorser was positioned at. The anchor: "I reviewed this file as it existed at this commit."
-- **`file_path`** — Relative path from repository root.
-- **`endorser`** — Human identity. Maps to the git author or a configured alias. Non-human agents MUST NOT appear in this field.
-- **`timestamp`** — ISO 8601 UTC. When the endorsement was recorded.
-- **`lines`** — Optional. If absent, the full file is endorsed. If present, a map with two keys: `endorsed` (line ranges the endorser vouches for) and `reviewed` (seen but not vouched). Line ranges are inclusive `[start, end]` pairs. Lines not covered by either key are `unknown`. These three states map directly to the framework: `endorsed` = owned, `reviewed` = cognitive debt, `unknown` = alien code.
-- **`note`** — Optional free-text. Intended for context: "Endorsed after security audit Q1-2026."
+When an endorser is transitioning — leaving the team, changing roles, going on extended leave — the framework supports a formal handoff: the outgoing endorser designates one or more successors and maps their endorsements to specific people or scopes. This creates a *transfer request*, not an automatic transfer. The designees must actively review and endorse to complete it. But it creates institutional memory: what needs attention, who should look at what, in what order. An endorsement plan — a single transition split across several people — is a legitimate and supported pattern.
 
-#### Operations
+---
 
-The protocol defines four operations:
+The framework needs concrete tooling to be actionable. The [companion article](VOUCH-CLI.md) specifies the VOUCH Protocol (v0.1) and presents a reference implementation — a CLI and an agent skill built on git.
 
-**`ENDORSE`** — Create or update an endorsement record for a file at the current commit. If the file already has an endorsement by the same endorser, the operation updates the timestamp and commit reference (re-endorsement after changes).
+---
 
-**`RETRACT`** — Voluntarily withdraw your own endorsement. Only the endorser can issue a retraction — it is a personal act, not an administrative one. Used when you determine you no longer understand the code, have changed roles, or want to explicitly signal that your coverage has lapsed. Implementations MAY surface staleness warnings (e.g., "this endorsement is 18 months old"), but staleness alone does not trigger revocation. Revocation is reserved for structural code changes; retraction is reserved for the endorser's own decision.
+## 7. The VOUCH Ethos
 
-**`TRANSFER`** — The current endorser designates one or more target humans as intended successors for their endorsements on specific files or ranges. Creates a `transfer_requested` record visible in each target's `QUERY` response and status output. Transfer requests do NOT count as endorsements — the targets must actively review and endorse to complete the handoff. A single transfer can split scope across multiple people (an endorsement plan). Transfer requests survive the transferring endorser's departure; they remain actionable even after the originator is no longer on the team.
+The framework establishes *what* to track and *why*. This section distills the ground rules — the principles any implementation calling itself VOUCH-compliant must embody. Not tool requirements. Values.
 
-**`QUERY`** — Retrieve endorsement status for a file, directory, or glob pattern. Returns the list of current endorsements, their staleness, pending transfer requests, and whether the code has structurally changed since endorsement.
+**1. Endorsement is the irreducible human element.** Agents author code. Humans endorse it. This distinction cannot be collapsed. No tool may auto-endorse on behalf of a human. The endorsement is the moment a person says "I understand this and I am responsible for it" — and that assertion is the one thing in this entire workflow that cannot be delegated, automated, or approximated.
 
-**`REPORT`** — Compute cognitive debt metrics for a scope (file, directory, service, entire repository). Returns: percentage of lines covered by valid endorsements broken down by scope and staleness; knowledge concentration metrics (per-endorser coverage percentage, simulated departure impact); and outstanding transfer requests with their age.
+**2. Three states of comprehension.** Every line of code is endorsed, reviewed, or unknown. No line can be in two states. No state is implicit — it's always queryable. These three states map to the framework: endorsed = owned, reviewed = cognitive debt, unknown = alien code. Any tool built on VOUCH must surface all three at both directory and line level.
 
-#### Invalidation Rules
+**3. Strategic Ignorance is engineering judgment.** Conscious, documented exclusion of code from the comprehension boundary — generated code, lock files, vendored dependencies — is valid engineering. The exclusion list IS the documentation of that decision. When your team puts `**/generated/**` in `.vouchignore`, they're saying: "We trust the generator, not the output." That's not a loophole; it's a declaration of engineering intent.
 
-Endorsements are not permanent. The protocol defines three invalidation triggers:
+**4. Signal, not gates.** Cognitive debt thresholds are system health indicators, not individual performance metrics. The moment endorsement count becomes a KPI, people game it, and the metric dies. Cognitive debt should be treated like test coverage: a team-level indicator of system health, never a measure of individual productivity.
 
-1. **Structural change (system revocation).** When the logic, control flow, or data model of endorsed lines changes, those endorsements are soft-deleted by the system — **revoked**, not retracted. The record is preserved but marked `revoked: structural_change`. Coverage drops immediately. Endorsements on unchanged lines survive. The endorser discovers the revocation the next time they query endorsement state.
+**5. Coverage thresholds, not bureaucracy.** Like test coverage: configure thresholds per tier, CI tells you pass/fail. No reports, no dashboards of shame. A number, a threshold, a signal. The pipeline fails when a tier exceeds its limit — the fix is an endorsement, not a rollback.
 
-   What does NOT trigger revocation: formatter runs, whitespace changes, comment edits, file renames, code moving within the project structure. An endorsement survives a `gofmt` pass and survives a file moving from `src/payment/gateway.go` to `pkg/payment/gateway.go`. It does not survive a change to the control flow within the endorsed lines. The implementation is responsible for detecting the difference; the protocol mandates the behavior.
+**6. Communication mirrors existing workflows.** `git pull && vouch status` should feel like `git status`. Same grammar: what changed, what you can do about it, the exact commands. A VOUCH tool must surface revoked endorsements with the commit that caused them, the author of that commit, and the commands to re-endorse or retract. No new mental model required.
 
-2. **Endorser departure.** When an endorser is removed from the team roster (however that's managed), their endorsements SHOULD be marked `at_risk` rather than immediately invalidated. The knowledge may still be reachable (the person might be in another team, or contactable), but the endorsement's operational value is degraded.
+**7. Onboarding is debt repayment.** Every hour a new hire spends understanding a module reduces cognitive debt. That's not a cost center; it's an investment with measurable returns. The framework makes this visible: an onboarding engineer who endorses three modules in their first month has literally reduced the team's cognitive debt, and the dashboard shows it.
 
-3. **Staleness.** The protocol does NOT mandate automatic expiration. Implementations MAY surface warnings for endorsements older than a configurable threshold, but the endorsement remains valid until the code changes or the endorser revokes it. Understanding doesn't expire on a timer — but it does atrophy, and surfacing staleness helps teams make conscious decisions about re-endorsement.
-
-#### Escape Hatches
-
-Not all code changes require endorsement re-evaluation:
-
-- **Conventional Commit prefixes.** Commits with `style:`, `chore:`, `ci:`, or `docs:` prefixes bypass endorsement invalidation. The assumption: these commits don't change program logic. If they do, the prefix is wrong — that's a process problem, not a protocol problem.
-- **`.vouchignore`** — A file using gitignore syntax that excludes paths and patterns from cognitive debt calculation entirely. Generated code, lock files, vendored dependencies, build artifacts. These are Alien Code by design. Including them would inflate the metric and dilute its signal.
-
-#### Materialized State
-
-Individual endorsement records are the source of truth — append-only, one per endorsement act. But computing coverage from raw records requires traversing history. The protocol therefore requires implementations to maintain a **materialized state**: a pre-computed summary of current endorsement coverage that can be read in O(1).
-
-The materialized state MUST be updated atomically with each endorsement operation. Implementations SHOULD update it automatically after relevant version control events (commits, merges, branch switches), without requiring a manual rebuild step. The materialized state is derived data — it can always be rebuilt from the endorsement records. CI reads the materialized state, not the raw records.
-
-#### Configuration Contract
-
-The protocol recognizes an implementation-defined configuration file (`.vouchrc` or equivalent) that specifies:
-
-- **Directory scopes** — which paths are subject to endorsement tracking.
-- **Exclusion patterns** — paths excluded from coverage calculation, with richer syntax than `.vouchignore`.
-- **Threshold definitions** — per-tier cognitive debt and alien code thresholds used by CI gates.
-
-This file SHOULD be committed to the repository and versioned alongside the code it governs.
-
-#### Storage Requirements
-
-The protocol is storage-agnostic. Endorsement records can live in git notes, a sidecar file, a database, or a service. The requirements are:
-
-1. Records MUST be versioned alongside the code (or at least linked to specific commits).
-2. Records MUST NOT create merge conflicts during normal development workflows.
-3. Records MUST be queryable without checking out the full repository history.
-4. Records SHOULD travel with the repository (no external service required for basic operation).
-5. Actual source code MUST NOT be transmitted to third-party services to compute or store endorsement data. The protocol operates on metadata only: file paths, hashes, identities, timestamps.
-
-One reference implementation using git notes is described in the companion article, [vouch: A Reference Implementation Proposal](VOUCH-CLI.md).
+**8. Knowledge concentration is risk.** One person endorsing 80% of the critical path isn't safety; it's a different kind of fragility. Bus factor, made measurable. Any tool built on VOUCH must surface concentration metrics alongside coverage metrics — because knowing *how distributed* comprehension is matters as much as knowing *how much* exists.
 
 ### What the framework doesn't do
 
@@ -350,26 +312,6 @@ Intellectual honesty demands acknowledging the limitations:
 **Endorsement is self-reported.** There is no comprehension quiz, no verification step, no proof of understanding. Someone can endorse code they don't understand, just like someone can approve a PR they didn't read. The framework provides the *infrastructure* for tracking; the culture provides the *incentive* for honesty.
 
 **It only works if the culture supports it.** No tool can force genuine understanding. If the organization treats endorsement as a checkbox to be gamed — the same way some organizations treat code coverage — the metric becomes meaningless. The framework is a mirror; what it reflects depends on the organization looking into it.
-
----
-
-## 7. What a VOUCH Tool Must Provide
-
-The protocol specifies *what* must be tracked. It doesn't specify *how*. Any conforming implementation — a CLI, an IDE plugin, a GitHub App — needs to satisfy a set of behavioral requirements to be useful. Here's what those are.
-
-**A communication pattern that mirrors `git status`.** A VOUCH tool must tell you what changed in your endorsement coverage and what your options are. The pattern: pull the latest code, then check what those changes cost you in endorsement terms. Revoked endorsements surfaced with the commit that caused them, the author of that commit, and the exact commands to re-endorse or retract. The same grammar developers already use to understand their working tree.
-
-**Three-state visibility at two levels of granularity.** The tool must surface the three states — endorsed, reviewed, unknown — at both directory level (which files are covered and by whom) and line level (which ranges within a file are covered). Directory-level is the daily view; line-level is the diagnostic view when you need to understand exactly what went dark. Both views must be queryable, filterable, and scriptable.
-
-**Agent participation model.** A VOUCH tool integrated with agentic coding tools must implement three behaviors: query the endorsement state of files before modifying them and surface the coverage impact to the human; self-report as author after generating code, flagging it as unendorsed; and assist human understanding during review — explaining what code does, why it's structured that way, what assumptions it makes. The endorsement is the human's to give. The agent helps them earn it.
-
-**Strategic Ignorance, formalized.** Any implementation must support excluding paths from the cognitive debt calculation. A `.vouchignore` file (or equivalent configuration) declares: "we have decided, as a team, that this code is outside our comprehension boundary." Lock files, generated code, build artifacts, vendored dependencies. This is not a loophole — it's a declaration of engineering intent. The exclusion file *is* the documentation of that decision. When your team puts `**/generated/**` in `.vouchignore`, they're saying: "We trust the generator, not the output." As long as that decision is conscious and documented, it's a valid engineering choice.
-
-**CI as enforcement point.** The tool must integrate into CI/CD and gate on per-tier cognitive debt thresholds. Tier-1 critical path has different tolerance than internal tooling. The pipeline fails when a change pushes a tier above its threshold, the PR author sees exactly what caused it, and the fix is an endorsement — not a rollback. Thresholds are team decisions; the tool provides the enforcement mechanism.
-
-**The endorsement as the irreducible human element.** The tool may use agents to assist — explaining code, surfacing changes, pre-digesting comprehension. But the endorsement itself — the assertion "I understand this and I am responsible for it" — cannot be delegated. The tool must enforce this distinction: agents author, humans endorse.
-
-The companion article, [vouch: A Reference Implementation Proposal](VOUCH-CLI.md), presents a concrete CLI and agent skill design built on these requirements. It's one answer. There should be many.
 
 ---
 
@@ -385,17 +327,17 @@ Marcus opens a module no human has ever seen and starts learning the system duri
 
 This is not a problem we solve by "trying harder to read PRs." The volume has already exceeded human bandwidth. We don't solve it by banning AI tools either — that ship has sailed, and it shouldn't come back. We solve it by building systems that track human comprehension as a first-class engineering metric, the same way we track test coverage, deployment frequency, and change failure rate.
 
-The conversation is already happening. [Storey](https://margaretstorey.com/blog/2026/02/09/cognitive-debt/) named the debt. [Osmani](https://addyo.substack.com/p/code-review-in-the-age-of-ai) documented the review bottleneck. [Beck](https://tidyfirst.substack.com/p/augmented-coding-beyond-the-vibes) articulated the skill shift. [Karpathy](https://thenewstack.io/vibe-coding-is-passe/) acknowledged the limits of vibes. [Orosz](https://newsletter.pragmaticengineer.com/p/the-future-of-software-engineering-with-ai) mapped the new landscape. The pieces are on the table. What's missing is the tooling to make it operational and the protocol to make it interoperable.
+The conversation is already happening. [Storey](https://margaretstorey.com/blog/2026/02/09/cognitive-debt/) named the debt. [Osmani](https://addyo.substack.com/p/code-review-in-the-age-of-ai) documented the review bottleneck. [Beck](https://tidyfirst.substack.com/p/augmented-coding-beyond-the-vibes) articulated the skill shift. [Karpathy](https://thenewstack.io/vibe-coding-is-passe/) acknowledged the limits of vibes. [Orosz](https://newsletter.pragmaticengineer.com/p/the-future-of-software-engineering-with-ai) mapped the new landscape. The pieces are on the table. What's missing is the tooling to make it operational and the ethos to make it interoperable.
 
-That's what VOUCH is trying to be — not the final answer, but the first formal attempt at an answer. A protocol that says: here's what an endorsement is, here's how it's stored, here's how it's invalidated, and here's how you measure the gap. v0.1. Incomplete by design. Built to be forked.
+That's what VOUCH is trying to be — not the final answer, but the first formal attempt at an answer. An ethos that says: here's what endorsement means, here's why it matters, and here's the line between signal and theater. A framework designed to be challenged, forked, and improved.
 
 So here's the call to action, and it's simple:
 
 Try measuring cognitive debt in your own codebase. Pick a critical service. Walk the code. Ask: "Who on this team can explain what this module does at 3 AM?" If the answer is "nobody" or "maybe Sarah, but she's on vacation," that's your cognitive debt, right there. No tooling required — just honest assessment.
 
-Build better tools. The `vouch` CLI described in the [companion article](VOUCH-CLI.md) is a reference implementation sketch, not a finish line. If git notes are wrong, use something else. If the protocol has blind spots, expose them. Fork the protocol, break it, submit PRs with improvements. Build a VS Code extension that shows the heatmap inline. Build a GitHub Action that gates PRs on cognitive debt thresholds. Build a Grafana dashboard that tracks endorsement coverage alongside uptime. The important thing is that *something* exists — some mechanism for humans to explicitly say "I own this" in a way that's tracked, queryable, and integrated into the development workflow.
+Build better tools. The [companion article](VOUCH-CLI.md) specifies the VOUCH Protocol (v0.1) and presents a reference implementation — a CLI and an agent skill built on git. It's a starting point, not a finish line. If git notes are wrong, use something else. If the ethos has blind spots, expose them. Fork it, break it, submit PRs with improvements. Build a VS Code extension that shows the heatmap inline. Build a GitHub Action that gates PRs on cognitive debt thresholds. Build a Grafana dashboard that tracks endorsement coverage alongside uptime. The important thing is that *something* exists — some mechanism for humans to explicitly say "I own this" in a way that's tracked, queryable, and integrated into the development workflow.
 
-Challenge the metric. If you think cognitive debt is measurable but this isn't the right way to measure it, write about that. If you think it's unmeasurable by nature — that any attempt to quantify human understanding is fundamentally flawed — write about that too. Push back. Poke holes. The VOUCH Protocol is v0.1 for a reason: it's designed to be wrong in instructive ways. The worst outcome isn't that we measure it wrong — it's that we don't measure it at all and discover the consequences during a production incident.
+Challenge the metric. If you think cognitive debt is measurable but this isn't the right way to measure it, write about that. If you think it's unmeasurable by nature — that any attempt to quantify human understanding is fundamentally flawed — write about that too. Push back. Poke holes. The VOUCH ethos is v0.1 for a reason: it's designed to be wrong in instructive ways. The worst outcome isn't that we measure it wrong — it's that we don't measure it at all and discover the consequences during a production incident.
 
 But above all: don't let it become another weaponized dashboard number. Don't tie it to performance reviews. Don't create leaderboards. Don't shame teams with high cognitive debt. The moment you do, people will game the metric, and you'll have gained nothing except a false sense of security on top of genuine ignorance — which is strictly worse than just the genuine ignorance.
 
@@ -403,6 +345,6 @@ Start asking the question. Not in a postmortem — in standup. Not "who committe
 
 ---
 
-*This article proposes the VOUCH Protocol (v0.1) and the VOUCH Framework (Validated Ownership and Understanding of Code by Humans) as a starting point for managing cognitive debt. The term "cognitive debt" originates from [Kosmyna et al. at the MIT Media Lab](https://www.media.mit.edu/publications/your-brain-on-chatgpt/) (June 2025). [Margaret-Anne Storey](https://margaretstorey.com/blog/2026/02/09/cognitive-debt/) extrapolated it to software engineering (February 2026). Multiple groups converged independently on the same concept. This article's contribution is the VOUCH Protocol: the first formal specification for tracking human endorsement and ownership of code deterministically.*
+*This article proposes the VOUCH Ethos (v0.1) and the VOUCH Framework (Validated Ownership and Understanding of Code by Humans) as a starting point for managing cognitive debt. The term "cognitive debt" originates from [Kosmyna et al. at the MIT Media Lab](https://www.media.mit.edu/publications/your-brain-on-chatgpt/) (June 2025). [Margaret-Anne Storey](https://margaretstorey.com/blog/2026/02/09/cognitive-debt/) extrapolated it to software engineering (February 2026). Multiple groups converged independently on the same concept. This article's contribution is the VOUCH Framework and Ethos: a formal vocabulary and set of principles for tracking human endorsement and ownership of code. The [companion article](VOUCH-CLI.md) specifies the VOUCH Protocol (v0.1) and presents a reference implementation.*
 
 *If you found this useful, the best thing you can do is challenge it. Open an issue, write a response, build a prototype, fork the protocol. The problem is real. The solution is unfinished.*
