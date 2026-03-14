@@ -202,11 +202,15 @@ This isn't speculation. The [5-7x velocity-comprehension gap](https://byteiota.c
 
 [Gergely Orosz](https://newsletter.pragmaticengineer.com/p/the-future-of-software-engineering-with-ai) has been tracking this shift extensively. [Anthropic's own research](https://www.anthropic.com/research/AI-assistance-coding-skills) on how AI assistance impacts coding skills points to the same conclusion: maintaining genuine understanding requires deliberate effort and structural support.
 
-Let's look at the tools we have and why they fall short. **`git blame`** tells you who committed a line, not who understood it. In the age of AI agents, it increasingly points at bots. **`git bisect`** finds the commit that broke things; it tells you nothing about whether anyone understood that commit. **`CODEOWNERS`** routes review requests — it's a notification mechanism, not a comprehension signal, and it's notoriously stale. **Commit messages** are cryptic when written by hurried humans and generic when written by AI.
+Let's look at the tools we have and why they fall short.
 
-All of these tools track **authorship** and **routing**. None of them track **endorsement** — the explicit, human assertion: "I have reviewed this code, I understand what it does, and I am willing to be the point of contact when it breaks."
+**`git blame`** tells you who committed a line. That used to be a useful proxy for "person who might understand this." It isn't anymore. Agents commit code autonomously. CI pipelines self-commit generated artifacts. Every PR is co-authored with an LLM that has already moved on to the next task by the time the merge completes. Run a formatter across 50,000 lines and `git blame` says you're the expert on all of them. Autonomous pipelines — lights-out software factories running without human involvement — produce commits with no meaningful human author at all. We are now building entire tracking and ownership systems on top of a field that no longer means what it used to. The author field isn't just imprecise. It's a lie we've inherited.
 
-That gap is what the VOUCH framework — and the VOUCH Protocol — aim to fill.
+**`CODEOWNERS`** routes review requests — it's a notification mechanism, not a comprehension signal. The person listed as owner left two quarters ago, and nobody updated the file because nobody wants to own the file that assigns ownership.
+
+**Commit messages** are cryptic when written by hurried humans and generic when written by AI. "Refactor authentication module to improve maintainability" tells you nothing about what actually changed, what trade-offs were made, or whether anyone could explain the module under pressure.
+
+All of these tools track **authorship** and **routing**. In 2026, authorship is increasingly a fiction and routing is a notification. Neither is a comprehension signal. That gap is what the VOUCH framework — and the VOUCH Protocol — aim to fill.
 
 ### The VOUCH Framework
 
@@ -218,6 +222,13 @@ The core model rests on a few principles:
 
 **Authorship is not endorsement.** This is the key distinction. Code enters the repository *unendorsed* by default. It remains unendorsed until a human explicitly claims comprehension — not just "I looked at it" but "I understand what this does and I'm willing to own it." An agent can author code. A human endorses it — or doesn't.
 
+**Two distinct measurements.** VOUCH tracks two things that are easy to conflate and critical to keep separate:
+
+- **Review** — someone saw this code, ran the tests, and signed off. The `LGTM` claim. A weaker signal: "I was present."
+- **Endorsement** — someone understands this code and owns it. They can explain it at 3 AM, answer questions about its design decisions, and be paged when it breaks. The stronger claim: "I am responsible."
+
+Both are worth tracking. Most teams only track the first and call it the second. The VOUCH Protocol records both signals separately — a file can be reviewed without being endorsed, and that distinction is exactly what the heatmap makes visible.
+
 **Escape hatches for noise.** Not every commit needs endorsement tracking. Formatter runs, CI configuration changes, dependency bumps — these create noise if you track them. Commits tagged `style:`, `chore:`, or `ci:` bypass endorsement tracking entirely.
 
 **Community endorsement as exploration.** A new engineer onboarding onto Ana's team spends a week reading the payment module. Under the current model, that's ramp-up cost. Under VOUCH, that's *debt repayment*. They endorse the module. Two people understand it now. **Onboarding is not dead time — it is debt repayment.** Every hour a new hire spends genuinely understanding a module reduces the team's cognitive debt. That's not a cost center; it's an investment with measurable returns on the dashboard.
@@ -227,6 +238,8 @@ The core model rests on a few principles:
 **The living heatmap.** Imagine the codebase as a living heatmap of human comprehension. Endorsed areas glow green. Unendorsed areas are red. The heatmap shifts in real time as people join, leave, or as agents modify code. Leila's codebase: honest patches of red and green. Ana's: mostly green, finally. Marcus's: still red, but now he *knows* it's red. This is the dashboard that should sit alongside DORA metrics and uptime monitors — a real-time view of *where human knowledge lives* in your system.
 
 **KPI target anchor.** As a starting point for discussion: aim for less than 20% cognitive debt on Tier-1 critical-path services. Track it over time on engineering dashboards alongside DORA metrics, test coverage, and incident rates. A developer tools microservice can tolerate 60% cognitive debt. Your payment gateway cannot.
+
+**Semver as a triage signal.** If you're already tracking cognitive debt and alien code percentages per service, you have the data to make release versioning carry comprehension semantics. A release where all modified files are endorsed and cognitive debt stays within threshold: patch. New unendorsed code introduced in non-critical paths, within acceptable limits: minor. Cognitive debt pushed above threshold on a critical service, or alien code introduced into the critical path: major — requiring explicit re-endorsement before it ships. Semver was always about communicating risk to consumers. Cognitive debt is a form of risk. The mapping is natural, and it makes the triage framework deterministic: the version number tells you what comprehension gate the release has cleared.
 
 ### The VOUCH Protocol (v0.1)
 
@@ -274,7 +287,9 @@ The protocol defines four operations:
 
 Endorsements are not permanent. The protocol defines three invalidation triggers:
 
-1. **Structural change.** When the AST hash of an endorsed file changes, all endorsements for that file are invalidated. The code has structurally changed; the endorser's understanding may no longer be accurate. The endorsement record is preserved but marked `invalidated: structural_change`, allowing the endorser to re-endorse quickly if the change was minor.
+1. **Structural change.** When the AST hash of an endorsed file changes — meaning actual logic, control flow, or data model changed — all endorsements for that file are invalidated. The record is preserved but marked `invalidated: structural_change`, allowing fast re-endorsement if the change was minor.
+
+   What does NOT trigger eviction: formatter runs, whitespace changes, comment edits, file renames, or code moving within the project structure. An endorsement survives a `gofmt` pass. It survives a file moving from `src/payment/gateway.go` to `pkg/payment/gateway.go`. It does not survive a change to the retry logic or error handling inside that gateway. The AST hash makes this deterministic — either the structure changed, or it didn't.
 
 2. **Endorser departure.** When an endorser is removed from the team roster (however that's managed), their endorsements SHOULD be marked `at_risk` rather than immediately invalidated. The knowledge may still be reachable (the person might be in another team, or contactable), but the endorsement's operational value is degraded.
 
