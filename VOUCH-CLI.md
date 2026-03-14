@@ -100,6 +100,36 @@ vouch retract src/payment/processor.go 45 67  # specific line range
 
 Retract is different from revocation: you're not being told your coverage lapsed, you're choosing to end it. The record is preserved with `retracted: true` and the reason is yours to add.
 
+**`vouch transfer`** — designate a successor for your endorsements:
+
+```bash
+vouch transfer src/payment/gateway.go --to sarah         # full file to one person
+vouch transfer src/auth/ --to sarah --to marco           # directory split across two
+vouch transfer src/payment/ --to sarah --to marco \
+  --note "sarah: gateway + processor; marco: webhooks"  # with a scope note
+```
+
+Transfer creates a `transfer_requested` record that appears in the target's `vouch status`. It does not confer endorsement — Sarah must still review and endorse. The transfer record is the institutional memory: what needs attention, who was asked to look at it, when the outgoing endorser created the request.
+
+**`vouch risk`** — surface knowledge concentration:
+
+```
+$ vouch risk
+KNOWLEDGE CONCENTRATION (Tier-1 critical path):
+  mibar    78%   ⚠ single point of failure
+  sarah    31%
+  marco    12%
+
+Simulated departure — mibar:
+  Cognitive debt: 18% → 52%  on Tier-1
+  Files with no remaining endorser: 6
+  Pending transfer requests: 0
+
+Run 'vouch transfer <path> --to <person>' to begin a handoff.
+```
+
+`vouch risk` answers the question no existing tool asks: what happens to comprehension coverage if this person leaves tomorrow? The concentration percentage is the bus factor made precise.
+
 ---
 
 ## 3. Storage and Hooks
@@ -183,7 +213,52 @@ The `.vouchignore` file covers patterns excluded entirely from the cognitive deb
 
 ---
 
-## 7. What's Missing
+## 7. Knowledge Transfer Workflows
+
+Two scenarios. One is a planned handoff. The other is damage control.
+
+### The happy path: a departing endorser
+
+Mibar is leaving the team in two weeks. He runs `vouch risk` to see what he owns on the critical path. 78% of Tier-1. He uses `vouch transfer` to create an endorsement plan:
+
+```bash
+vouch transfer src/payment/ --to sarah \
+  --note "payment gateway: the retry logic on lines 45-89 is the tricky part, read the 2024 incident postmortem first"
+
+vouch transfer src/auth/ --to marco \
+  --note "auth module is stable, main risk is the token refresh edge case in jwt.go lines 112-130"
+
+vouch transfer src/core/query_optimizer.go --to sarah --to marco \
+  --note "split review: sarah takes cost-based optimizer (lines 1-200), marco takes join selection (201-400)"
+```
+
+Sarah and Marco each see the transfer requests on their next `vouch status`. The notes from Mibar are preserved — institutional memory, not just file paths. Over the next two weeks they review, ask Mibar questions while he's still reachable, and endorse. By his last day, `vouch risk` shows no single point of failure.
+
+### The sad path: the endorser is already gone
+
+Jordan left three months ago. Nobody ran `vouch transfer`. `vouch risk` now shows 43% of Tier-1 with no remaining endorser. `vouch status` shows a list of `at_risk` endorsements.
+
+```
+$ vouch risk --endorser jordan
+COVERAGE LOST SINCE jordan's DEPARTURE:
+  src/billing/reconciliation.go    no remaining endorsers   (jordan only)
+  src/core/event_sourcing.go       no remaining endorsers   (jordan only)
+  src/payment/gateway.go           sarah still endorses     (lines 1-89 only)
+  ...4 more files
+```
+
+The recovery workflow:
+1. `vouch ls -a src/billing/reconciliation.go` — see which line ranges went dark
+2. Ask the agent to explain what Jordan understood: "explain src/billing/reconciliation.go — what does this module do, why is it structured this way, what are the edge cases?"
+3. The agent analyzes the code, the git history, and any available context — not because it endorses, but because it pre-digests the comprehension work
+4. The human reads the explanation, traces the code, satisfies themselves that they understand it
+5. `vouch endorse src/billing/reconciliation.go`
+
+The saddest thing about alien code is that it's recoverable — it just costs time. The agent skill turns a cold re-endorsement into a structured tutoring session. Jordan's code didn't disappear; it just lost its human champion. The heatmap shows where to start.
+
+---
+
+## 8. What's Missing
 
 This is v0.1. Things that should exist but don't yet:
 
