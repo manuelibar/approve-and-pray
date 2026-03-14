@@ -1,0 +1,43 @@
+# .vouchignore — Strategic Ignorance Configuration
+# Files and patterns excluded from Cognitive Debt calculation
+#
+# These are files that, by design, no human is expected to review
+# or endorse. Excluding them is not gaming the metric — it's being
+# honest about where human comprehension delivers value.
+
+# Dependency lock files (Alien Code — autonomous updates)
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+Cargo.lock
+go.sum
+Gemfile.lock
+composer.lock
+poetry.lock
+
+# Auto-generated clients and SDKs
+src/generated/**
+**/generated/**
+**/*.pb.go
+**/*.g.dart
+**/*_gen.go
+**/*.generated.*
+
+# Massive data fixtures and snapshots
+__snapshots__/
+test/fixtures/**/*.json
+test/fixtures/**/*.xml
+**/*.snap
+
+# Build artifacts and compiled output
+dist/
+build/
+out/
+*.min.js
+*.min.css
+*.bundle.*
+
+# Documentation (endorse the code, not the docs)
+docs/
+*.md
+LICENSE
