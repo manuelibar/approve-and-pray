@@ -1,4 +1,4 @@
-# Approve and Pray: Cognitive Debt, Code Ownership, and the Tools We're Missing
+# Approve and Pray. Halt and Pray. Cognitive Debt, Code Ownership, and the Tools We're Missing
 
 *By [Manuel Ibar](https://github.com/mibar) — March 2026*
 
@@ -16,9 +16,11 @@ They didn't rubber-stamp it. Rubber-stamping is lazy — it's the act of not car
 
 Five people reviewed it. None of them understood it as a *system*. The security engineer understood the surface. The architect understood the structure. The seniors understood fragments of the logic. Nobody looked at the whole picture. Nobody talked to each other about this specific code. Nobody owns the mental model of what this module does, why it does it that way, or what breaks if the assumptions change.
 
-The code ships. The cognitive debt is identical to the startup's.
+The code ships, fifteen days late. They halted and prayed.
 
-Somewhere right now, a very confident AI is writing `UPDATE users SET role = 'admin'`. At the startup, a very tired human is approving it at 4:47 PM on a Friday. At the corp, five moderately-attentive reviewers are approving it across fifteen calendar days and six JIRA transitions. The approvals don't compose into comprehension. They just add latency to the same outcome.
+The cognitive debt is identical to the startup's.
+
+Somewhere right now, a very confident AI is writing `UPDATE users SET role = 'admin'`. At the startup, a very tired human is approving it at 4:47 PM on a Friday — approved and prayed. At the corp, five moderately-attentive reviewers are halting it for fifteen calendar days across six JIRA transitions, then shipping it anyway — halted and prayed. The approvals don't compose into comprehension. They just add latency to the same outcome.
 
 This is what makes cognitive debt different from every other software quality problem we've faced. It isn't solved by moving faster — the startup proves that. It isn't solved by adding more process — the corp proves that too. The startup's problem is too little friction: code ships before anyone understands it. The corp's problem is too much friction in the wrong places: code takes weeks to ship, and still nobody understands it at the end. Two completely different failure modes. One root cause.
 
