@@ -4,8 +4,6 @@
   <img src="https://github.com/user-attachments/assets/2d01f20f-aee6-46e0-a605-0f2981b711ae" alt="Nobody Owns This Code" width="100%" />
 </p>
 
-*By [Manuel Ibar](https://github.com/mibar) — March 2026*
-
 ---
 
 ## 1. Three Fridays
@@ -244,8 +242,6 @@ Both are worth tracking. Most teams only track the first and call it the second.
 **The living heatmap.** Imagine the codebase as a living heatmap of human comprehension. Endorsed areas glow green. Unendorsed areas are red. The heatmap shifts in real time as people join, leave, or as agents modify code. Leila's codebase: honest patches of red and green. Ana's: mostly green, finally. Marcus's: still red, but now he *knows* it's red. This is the dashboard that should sit alongside DORA metrics and uptime monitors — a real-time view of *where human knowledge lives* in your system.
 
 **KPI target anchor.** As a starting point for discussion: aim for less than 20% cognitive debt on Tier-1 critical-path services. Track it over time on engineering dashboards alongside DORA metrics, test coverage, and incident rates. A developer tools microservice can tolerate 60% cognitive debt. Your payment gateway cannot.
-
-**Semver as a triage signal.** If you're already tracking cognitive debt and alien code percentages per service, you have the data to make release versioning carry comprehension semantics. A release where all modified files are endorsed and cognitive debt stays within threshold: patch. New unendorsed code introduced in non-critical paths, within acceptable limits: minor. Cognitive debt pushed above threshold on a critical service, or alien code introduced into the critical path: major — requiring explicit re-endorsement before it ships. Semver was always about communicating risk to consumers. Cognitive debt is a form of risk. The mapping is natural, and it makes the triage framework deterministic: the version number tells you what comprehension gate the release has cleared.
 
 **Knowledge concentration risk.** VOUCH makes bus factor measurable. A codebase where one engineer endorses 80% of the critical path isn't safer than one with 80% cognitive debt — it's differently fragile. The framework requires tracking not just *how much* is covered but *how distributed* that coverage is. Any single endorser holding more than a configurable threshold of critical-path coverage is a systemic risk: one departure, one context-switch, one extended absence away from a coverage crisis. This concentration metric belongs on the same dashboard as cognitive debt. It answers a question no existing tool asks: *what happens to comprehension coverage if this person leaves tomorrow?*
 
