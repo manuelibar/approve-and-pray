@@ -1,4 +1,4 @@
-# Nobody Owns This Code: Cognitive Debt, Code Ownership, and the Tools We're Missing
+# Nobody Owns This Code
 
 *By [Manuel Ibar](https://github.com/mibar) — March 2026*
 
