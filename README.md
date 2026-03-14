@@ -150,11 +150,17 @@ Code coverage was a great idea. You write tests, you measure how much of your co
 
 The same fate awaits cognitive debt if we're not careful. Three warnings for whatever measurement framework emerges:
 
-**First: this is not a performance metric.** The moment you measure individual developers by their endorsement count, you've lost. People will script auto-endorsements faster than you can say "gamification." They'll bulk-approve code they haven't read, just like they wrote meaningless tests to hit coverage numbers. It's the same trap as measuring by PR count or commit count — the metric becomes the target, and the behavior it was meant to track goes underground. Cognitive debt should be a *system health indicator*, not a *developer productivity metric*. The same way you don't blame individual developers for low test coverage on a legacy module — you identify the gap and address it structurally.
+#### Not a Performance Metric
 
-**Second: zero cognitive debt is an anti-pattern.** This is what's happening to Ana right now. Her team is trying to drive cognitive debt to zero through exhaustive review. She's succeeding — every line reviewed, every PR understood. And her team can't ship. She bought a Formula 1 car and she's driving it at 30 km/h because she wants to read every road sign. The goal isn't zero. The goal is *intentional and bounded*. Some cognitive debt is not just acceptable — it's *necessary*.
+The moment you measure individual developers by their endorsement count, you've lost. People will script auto-endorsements faster than you can say "gamification." They'll bulk-approve code they haven't read, just like they wrote meaningless tests to hit coverage numbers. It's the same trap as measuring by PR count or commit count — the metric becomes the target, and the behavior it was meant to track goes underground. Cognitive debt should be a *system health indicator*, not a *developer productivity metric*. The same way you don't blame individual developers for low test coverage on a legacy module — you identify the gap and address it structurally.
 
-**Third: strategic ignorance is engineering judgment, not negligence.** Here's what nobody has told Ana yet: she doesn't need to review everything. A generated API client from an OpenAPI spec? Endorse the spec, not the 15,000 lines of output. A lock file updated by Dependabot? That's alien code by design — it was never meant for human eyes. A well-documented cryptographic library with a decade of production use? Endorse its interface and behavior, not its internals. *Strategic Ignorance* — the conscious, documented decision to exclude certain code from your comprehension boundary. It's not negligence. It's triage. And it's the difference between Ana going home at 6 PM or 8 PM.
+#### Zero Cognitive Debt Is an Anti-Pattern
+
+This is what's happening to Ana right now. Her team is trying to drive cognitive debt to zero through exhaustive review. She's succeeding — every line reviewed, every PR understood. And her team can't ship. She bought a Formula 1 car and she's driving it at 30 km/h because she wants to read every road sign. The goal isn't zero. The goal is *intentional and bounded*. Some cognitive debt is not just acceptable — it's *necessary*.
+
+#### Strategic Ignorance Is Engineering Judgment
+
+Here's what nobody has told Ana yet: she doesn't need to review everything. A generated API client from an OpenAPI spec? Endorse the spec, not the 15,000 lines of output. A lock file updated by Dependabot? That's alien code by design — it was never meant for human eyes. A well-documented cryptographic library with a decade of production use? Endorse its interface and behavior, not its internals. *Strategic Ignorance* — the conscious, documented decision to exclude certain code from your comprehension boundary. It's not negligence. It's triage. And it's the difference between Ana going home at 6 PM or 8 PM.
 
 Now think about Marcus. He's been sleeping well for months. The dashboards are green. The agents are shipping. And somewhere in those 12,000 lines nobody read, a data transformation has been introducing a rounding error in currency conversions — just enough to be invisible on any single transaction, just enough to be catastrophic across millions of them over six months. Marcus isn't paying interest on cognitive debt. He doesn't even know he has a loan.
 
@@ -240,18 +246,25 @@ Nobody can directly remove someone else's endorsement. The only thing that revok
 
 **Retract** is a personal act — only you can withdraw your own endorsement. **Revocation** is what the system does when code changes beneath you. The distinction matters: revocations are events that happened to your endorsement; retractions are decisions you made about it.
 
-#### Two Distinct Measurements
+#### Three Signals, Two Axes
 
-VOUCH tracks two signals that are easy to conflate and critical to keep separate:
+VOUCH tracks three signals on two independent axes:
 
-- **Review** — someone saw this code, ran the tests, and signed off. The `LGTM` claim. A weaker signal: "I was present."
-- **Endorsement** — someone understands this code and owns it. They can explain it at 3 AM, answer questions about its design decisions, and be paged when it breaks. The stronger claim: "I am responsible."
+##### Provenance — who wrote it
 
-Both are worth tracking. Most teams only track the first and call it the second. The framework records both signals separately — a file can be reviewed without being endorsed, and that distinction is exactly what the heatmap makes visible.
+**Author** — who actually wrote this code. Human or agent. `git blame` can no longer answer this question honestly — agents commit, formatters reassign, CI pipelines auto-commit. VOUCH records provenance separately: when an agent generates code, the system records it. When a human writes code, the system records it. The author field is a fact, not a judgment.
 
-#### Escape Hatches for Noise
+##### Comprehension — who understands it
 
-Not every commit needs endorsement tracking. Commits tagged `style:`, `chore:`, or `ci:` bypass endorsement tracking entirely. A `.vouchignore` file declares patterns excluded from the cognitive debt calculation — generated code, lock files, vendored dependencies, build artifacts. These are alien code by design.
+**Review** — someone has walked through this code with the intent to understand. Not a rubber stamp — a structured comprehension step, typically assisted by an agent that explains the code, its assumptions, and its design decisions. The reviewer earned partial understanding. "I've been here. I know what this does in broad strokes."
+
+**Endorsement** — someone understands this code and owns it. They can explain it at 3 AM, answer questions about its design decisions, and be paged when it breaks. The strongest claim: "I am responsible."
+
+Provenance and comprehension are orthogonal. A line can be agent-authored and endorsed — Ana endorsed the agent's output after understanding it. A line can be human-authored and unknown — Marcus wrote it two years ago but nobody on the current team can explain it. Both dimensions carry independent value. Most teams track only `git blame` (broken provenance) and PR approval (weak comprehension). VOUCH tracks honest provenance and two levels of genuine comprehension.
+
+#### Strategic Ignorance: Escape Hatches
+
+Not every commit needs endorsement tracking. Commits tagged `style:`, `chore:`, or `ci:` bypass endorsement tracking entirely. A `.vouchignore` file declares patterns excluded from the cognitive debt calculation — generated code, lock files, vendored dependencies, build artifacts. These are alien code by design. The exclusion list IS the documentation of that engineering judgment.
 
 #### Community Endorsement as Exploration
 
@@ -287,9 +300,9 @@ The framework needs concrete tooling to be actionable. The [companion article](V
 
 The framework establishes *what* to track and *why*. This section distills the ground rules — the principles any implementation calling itself VOUCH-compliant must embody. Not tool requirements. Values.
 
-**1. Endorsement is the irreducible human element.** Agents author code. Humans endorse it. This distinction cannot be collapsed. No tool may auto-endorse on behalf of a human. The endorsement is the moment a person says "I understand this and I am responsible for it" — and that assertion is the one thing in this entire workflow that cannot be delegated, automated, or approximated.
+**1. Endorsement is the irreducible human element.** Agents author code. Humans endorse it. This distinction cannot be collapsed. No tool may auto-endorse on behalf of a human. The endorsement is the moment a person says "I understand this and I am responsible for it" — and that assertion is the one thing in this entire workflow that cannot be delegated, automated, or approximated. Author provenance — who actually wrote the code, human or agent — must be tracked honestly and separately, because `git blame` can no longer answer this question.
 
-**2. Three states of comprehension.** Every line of code is endorsed, reviewed, or unknown. No line can be in two states. No state is implicit — it's always queryable. These three states map to the framework: endorsed = owned, reviewed = cognitive debt, unknown = alien code. Any tool built on VOUCH must surface all three at both directory and line level.
+**2. Two axes of code knowledge.** Every line of code has a provenance (who wrote it — human or agent) and a comprehension state (endorsed, reviewed, or unknown). These are independent signals on independent axes. A line can be agent-authored and endorsed. A line can be human-authored and unknown. Any tool built on VOUCH must surface both dimensions — because knowing *where the code came from* and *who understands it* are different questions with different answers.
 
 **3. Strategic Ignorance is engineering judgment.** Conscious, documented exclusion of code from the comprehension boundary — generated code, lock files, vendored dependencies — is valid engineering. The exclusion list IS the documentation of that decision. When your team puts `**/generated/**` in `.vouchignore`, they're saying: "We trust the generator, not the output." That's not a loophole; it's a declaration of engineering intent.
 
@@ -317,34 +330,22 @@ Intellectual honesty demands acknowledging the limitations:
 
 ## 8. Surfing the Wave Together
 
-When the P1 hits at 3 AM — and it will — someone will ask "who owns this?"
-
-Ana will raise her hand. She endorsed this module. She can explain it. But the fix touches a module that's been in her review queue for two weeks — one she hasn't endorsed yet.
-
-Leila opens the failing module and recognizes the PR she approved at 4:47 PM. The knot in her stomach was right.
-
-Marcus opens a module no human has ever seen and starts learning the system during a production incident.
-
-This is not a problem we solve by "trying harder to read PRs." The volume has already exceeded human bandwidth. We don't solve it by banning AI tools either — that ship has sailed, and it shouldn't come back. We solve it by building systems that track human comprehension as a first-class engineering metric, the same way we track test coverage, deployment frequency, and change failure rate.
-
 The conversation is already happening. [Storey](https://margaretstorey.com/blog/2026/02/09/cognitive-debt/) named the debt. [Osmani](https://addyo.substack.com/p/code-review-in-the-age-of-ai) documented the review bottleneck. [Beck](https://tidyfirst.substack.com/p/augmented-coding-beyond-the-vibes) articulated the skill shift. [Karpathy](https://thenewstack.io/vibe-coding-is-passe/) acknowledged the limits of vibes. [Orosz](https://newsletter.pragmaticengineer.com/p/the-future-of-software-engineering-with-ai) mapped the new landscape. The pieces are on the table. What's missing is the tooling to make it operational and the ethos to make it interoperable.
 
-That's what VOUCH is trying to be — not the final answer, but the first formal attempt at an answer. An ethos that says: here's what endorsement means, here's why it matters, and here's the line between signal and theater. A framework designed to be challenged, forked, and improved.
+That's what VOUCH is trying to be. Not a standard — a stake in the ground. An ethos that says: here's what endorsement means, here's why it matters, and here's the line between signal and theater. The [companion article](VOUCH-CLI.md) specifies the protocol and presents a reference implementation. It's v0.1. It's probably wrong about important things. That's the point.
 
-So here's the call to action, and it's simple:
+If VOUCH triggers a debate about whether human comprehension is even measurable — good. If someone builds a competing framework that proves this one naive — better. If an opposite approach emerges, one that argues comprehension tracking is fundamentally misguided and proposes something orthogonal — best. The goal was never that everyone adopts VOUCH. The goal is that the industry stops pretending the problem doesn't exist. The worst outcome isn't the wrong framework winning. It's no framework existing, and the gap between what machines produce and what humans understand growing silently until it surfaces as incidents, breaches, and engineering cultures where nobody can explain their own systems.
 
-Try measuring cognitive debt in your own codebase. Pick a critical service. Walk the code. Ask: "Who on this team can explain what this module does at 3 AM?" If the answer is "nobody" or "maybe Sarah, but she's on vacation," that's your cognitive debt, right there. No tooling required — just honest assessment.
+The metric will be gamed. Any metric is. The moment endorsement count shows up on a performance review, people will script auto-endorsements and the signal dies — the same way coverage died when it became a gate instead of an indicator. That's not a reason to avoid measuring. It's a reason to measure carefully, to treat cognitive debt as a system health signal rather than an individual productivity metric, and to remember that the dashboard is a mirror: what it reflects depends on the culture looking into it.
 
-Build better tools. The [companion article](VOUCH-CLI.md) specifies the VOUCH Protocol (v0.1) and presents a reference implementation — a CLI and an agent skill built on git. It's a starting point, not a finish line. If git notes are wrong, use something else. If the ethos has blind spots, expose them. Fork it, break it, submit PRs with improvements. Build a VS Code extension that shows the heatmap inline. Build a GitHub Action that gates PRs on cognitive debt thresholds. Build a Grafana dashboard that tracks endorsement coverage alongside uptime. The important thing is that *something* exists — some mechanism for humans to explicitly say "I own this" in a way that's tracked, queryable, and integrated into the development workflow.
+What won't be gamed is the 3 AM test. When the P1 hits and someone asks "who owns this?" — Ana raises her hand because she endorsed this module and can explain it. Leila opens the failing file and recognizes the PR she approved at 4:47 PM. The knot in her stomach was right. Marcus opens a module no human has ever seen and starts learning the system during a production incident.
 
-Challenge the metric. If you think cognitive debt is measurable but this isn't the right way to measure it, write about that. If you think it's unmeasurable by nature — that any attempt to quantify human understanding is fundamentally flawed — write about that too. Push back. Poke holes. The VOUCH ethos is v0.1 for a reason: it's designed to be wrong in instructive ways. The worst outcome isn't that we measure it wrong — it's that we don't measure it at all and discover the consequences during a production incident.
+That's the question this article is really about. Not "who committed this" or "who reviewed this" or "whose name is in CODEOWNERS." *Who understands this?*
 
-But above all: don't let it become another weaponized dashboard number. Don't tie it to performance reviews. Don't create leaderboards. Don't shame teams with high cognitive debt. The moment you do, people will game the metric, and you'll have gained nothing except a false sense of security on top of genuine ignorance — which is strictly worse than just the genuine ignorance.
-
-Start asking the question. Not in a postmortem — in standup. Not "who committed this" or "who reviewed this" or "whose name is in CODEOWNERS." Who *understands* this? If nobody raises their hand — now you know where to start. And you can stop praying.
+If nobody raises their hand — now you know where to start. And you can stop praying.
 
 ---
 
 *This article proposes the VOUCH Ethos (v0.1) and the VOUCH Framework (Validated Ownership and Understanding of Code by Humans) as a starting point for managing cognitive debt. The term "cognitive debt" originates from [Kosmyna et al. at the MIT Media Lab](https://www.media.mit.edu/publications/your-brain-on-chatgpt/) (June 2025). [Margaret-Anne Storey](https://margaretstorey.com/blog/2026/02/09/cognitive-debt/) extrapolated it to software engineering (February 2026). Multiple groups converged independently on the same concept. This article's contribution is the VOUCH Framework and Ethos: a formal vocabulary and set of principles for tracking human endorsement and ownership of code. The [companion article](VOUCH-CLI.md) specifies the VOUCH Protocol (v0.1) and presents a reference implementation.*
 
-*If you found this useful, the best thing you can do is challenge it. Open an issue, write a response, build a prototype, fork the protocol. The problem is real. The solution is unfinished.*
+*The problem is real. The solution is unfinished. That's where you come in.*

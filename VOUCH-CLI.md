@@ -60,11 +60,23 @@ Fields:
 - **`lines`** — Optional. If absent, the full file is endorsed. If present, a map with two keys: `endorsed` (line ranges the endorser vouches for) and `reviewed` (seen but not vouched). Line ranges are inclusive `[start, end]` pairs. Lines not covered by either key are `unknown`. These three states map directly to the framework: `endorsed` = owned, `reviewed` = cognitive debt, `unknown` = alien code.
 - **`note`** — Optional free-text. Intended for context: "Endorsed after security audit Q1-2026."
 
+### Provenance Tracking
+
+VOUCH tracks author provenance as an axis independent from comprehension. `git blame` is broken — agents commit, formatters reassign, CI pipelines auto-commit. The author field is a lie we've inherited. VOUCH fixes it.
+
+When an agent generates code, it self-reports as author. The system records provenance per commit and per file: who actually wrote this code — human or agent. This data is queryable via `vouch ls` and `vouch stats`, and it travels with the endorsement data.
+
+Provenance and comprehension are orthogonal. A file can be agent-authored and endorsed (the agent wrote it, a human understands it). A file can be human-authored and unknown (a human wrote it months ago, nobody on the current team can explain it). Tracking both answers two questions no existing tool answers honestly: *where did this code come from?* and *who understands it?*
+
+The exact mechanism for recording provenance is implementation-defined but must satisfy the same storage requirements as endorsement records.
+
 ### Operations
 
-The protocol defines four operations:
+The protocol defines five operations:
 
 **`ENDORSE`** — Create or update an endorsement record for a file at the current commit. If the file already has an endorsement by the same endorser, the operation updates the timestamp and commit reference (re-endorsement after changes).
+
+**`REVIEW`** — Record a structured review of a file at the current commit. Creates or updates a comprehension record with `reviewed` line ranges. Review is a weaker claim than endorsement — "I've walked through this code and understand its shape" — but stronger than unknown. Typically produced by an agent-assisted review session (see Section 4). The reviewer can later upgrade to endorsement with `ENDORSE`.
 
 **`RETRACT`** — Voluntarily withdraw your own endorsement. Only the endorser can issue a retraction — it is a personal act, not an administrative one. Used when you determine you no longer understand the code, have changed roles, or want to explicitly signal that your coverage has lapsed. Revocation is reserved for structural code changes; retraction is reserved for the endorser's own decision.
 
@@ -125,28 +137,50 @@ You're positioned at the current commit. You're telling the system: "I have revi
 
 If you don't endorse, nothing breaks. The code ships. The committer is recorded as author (standard git behavior), the file is flagged as *unendorsed*. No gates, no blocks — just signal.
 
+**The review session — `vouch review`:**
+
+```bash
+vouch review src/payment/gateway.go
+```
+
+The agent opens a structured walkthrough:
+
+1. What changed since the last endorsement (or since file creation)
+2. Walk through each structural change — what it does and why
+3. Flag risks, unusual patterns, or complexity
+4. Take your questions
+
+When you're satisfied with your understanding:
+
+```
+Recording review for src/payment/gateway.go (lines 1-200)
+Review does not confer ownership. Run 'vouch endorse' when ready to own it.
+```
+
+Review records partial comprehension — "I've walked through this, I understand the shape." Stronger than unknown, weaker than endorsed. If you're confident enough to own it, upgrade with `vouch endorse`. This is the mechanism that replaces GitHub's LGTM with a structured comprehension step — and it's what makes "reviewed" a legitimate signal instead of a checkbox.
+
 **Inspecting ownership — `vouch ls`:**
 
 ```
 $ vouch ls src/payment/
-ENDORSED  REVIEWED  UNKNOWN  FILE                   OWNERS
-    87%       8%       5%    gateway.go             mibar, sarah
-    45%       0%      55%    processor.go           mibar
-     0%      23%      77%    webhook_handler.go     —
-   100%       0%       0%    types.go               sarah
+ENDORSED  REVIEWED  UNKNOWN  FILE                   OWNERS          AUTHORED BY
+    87%       8%       5%    gateway.go             mibar, sarah    human + agent
+    45%       0%      55%    processor.go           mibar           agent
+     0%      23%      77%    webhook_handler.go     —               agent
+   100%       0%       0%    types.go               sarah           human
 ```
 
-Defaults to CWD if no path is given. Use `--dir` (`-d`) to scope explicitly. Three columns map directly to the framework: `ENDORSED` (owned), `REVIEWED` (cognitive debt), `UNKNOWN` (alien code).
+Defaults to CWD if no path is given. Use `--dir` (`-d`) to scope explicitly. The comprehension columns map directly to the framework: `ENDORSED` (owned), `REVIEWED` (cognitive debt), `UNKNOWN` (alien code). The `AUTHORED BY` column shows provenance — the independent axis that answers "where did this code come from?"
 
 For line-level detail on a specific file:
 
 ```
 $ vouch ls -a src/payment/gateway.go
-LINES     STATE       OWNERS          AGE
-1-89      endorsed    mibar, sarah    3w
-90-102    reviewed    sarah           1w
-103-147   unknown     —               —
-148-200   endorsed    mibar           3w
+LINES     STATE       OWNERS          AUTHORED BY    AGE
+1-89      endorsed    mibar, sarah    human          3w
+90-102    reviewed    sarah           agent          1w
+103-147   unknown     —               agent          —
+148-200   endorsed    mibar           human          3w
 ```
 
 **Scanning coverage — `vouch stats`:**
@@ -154,8 +188,9 @@ LINES     STATE       OWNERS          AGE
 ```bash
 $ vouch stats --dir src/ --exclude "**/*.test.go"
 Endorsed:        70%
-Cognitive Debt:  18%  (reviewed, unendorsed)
+Cognitive Debt:  18%  (reviewed, not owned)
 Alien Code:      12%  (never seen)
+Agent-authored:  65%
 Tier-1 threshold: 20%  ✓
 
 $ vouch stats --config .vouchrc   # use project config for dirs, excludes, thresholds
@@ -241,13 +276,35 @@ This is the comprehension feedback loop: the agent knows the human cost of its c
 
 ### After Generating Code
 
-The agent self-reports as author. The code is flagged as AI-generated, unendorsed. The heatmap updates in real time. No endorsement is created — the write path and the comprehension path remain distinct.
+The agent self-reports as author — this is provenance tracking in action. The code is flagged as agent-authored and unendorsed. The heatmap updates in real time. `vouch ls` shows "agent" in the `AUTHORED BY` column. No endorsement is created — the write path and the comprehension path remain distinct. The provenance record answers "who wrote this?" honestly, which is more than `git blame` can do after a formatter run.
 
-### During Review
+### The Review Session
 
-The agent helps the human *understand* — not just write. "You asked me to explain this module. Here's what it does, why it's structured this way, and what assumptions it makes." The human reads the explanation, traces the code, and when they genuinely understand it: `vouch endorse`. The agent pre-digests the comprehension work. The human makes the ownership declaration.
+This is the mechanism that makes "reviewed" a legitimate signal instead of a checkbox. The agent walks you through code with the intent to build your understanding — not to rubber-stamp it.
 
-This is where the agent skill becomes a force multiplier for debt repayment. A new team member onboarding onto a module doesn't start from zero — the agent walks them through the code, the history, the design decisions. What used to take a week of solo code-reading becomes a structured tutoring session. The endorsement at the end is still the human's — but the path to earning it is dramatically shorter.
+```bash
+vouch review src/payment/gateway.go
+```
+
+The session follows a structured pattern:
+
+1. **Context** — What changed since the last endorsement (or since file creation). The agent diffs against the last endorsed state, not just the last commit.
+2. **Walkthrough** — Each structural change explained: what it does, why it's structured this way, what assumptions it makes. The agent draws on the code, the git history, related modules, and the commit messages.
+3. **Risk flags** — Anything unusual, complex, or fragile. Edge cases the tests might not cover. Patterns that deviate from the rest of the codebase.
+4. **Your questions** — The session is interactive. Ask about specific lines, design decisions, alternative approaches. The agent answers; you evaluate.
+
+When you're satisfied:
+
+```
+Recording review for src/payment/gateway.go (lines 1-200)
+Review does not confer ownership. Run 'vouch endorse' when ready to own it.
+```
+
+Review records partial comprehension. If you're confident enough to own it, upgrade with `vouch endorse`. If not, the review still moves lines from "unknown" to "reviewed" — from alien code to cognitive debt. That's progress.
+
+This is where the agent skill replaces GitHub's review process with something genuinely better. A GitHub LGTM records the *fact* of approval. A VOUCH review session provides the *experience* of comprehension. The human earns understanding through structured assistance. The signal recorded at the end reflects actual cognitive engagement, not a checkbox.
+
+This is also the force multiplier for debt repayment. A new team member onboarding onto a module doesn't start from zero — the agent walks them through the code, the history, the design decisions. What used to take a week of solo code-reading becomes a structured tutoring session. The review or endorsement at the end is still the human's — but the path to earning it is dramatically shorter.
 
 ---
 
