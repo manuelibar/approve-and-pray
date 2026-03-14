@@ -220,7 +220,15 @@ The core model rests on a few principles:
 
 **Committer = Author by default.** When you or an agent commits code, git records authorship. Nothing changes here. VOUCH doesn't replace git — it adds a layer on top.
 
-**Authorship is not endorsement.** This is the key distinction. Code enters the repository *unendorsed* by default. It remains unendorsed until a human explicitly claims comprehension — not just "I looked at it" but "I understand what this does and I'm willing to own it." An agent can author code. A human endorses it — or doesn't.
+**Authorship is not endorsement — by default and by design.** Committing code MUST NOT auto-create an endorsement. The act of writing a change and the act of vouching for it are separate, deliberate acts. A developer can — and often should — commit code without endorsing it: prototypes, exploratory work, agent-generated sections they haven't fully reviewed, changes that need a second pair of eyes. The endorsement is the moment of ownership declaration. The commit is not. An agent authors code. A developer commits code. A human endorses it. The protocol keeps these three roles distinct. Nothing in the write path implies anything about the comprehension path.
+
+**Endorsement Revocation Strategy.** When an endorsement is invalidated by structural change, the prior endorser enters a gap that needs resolution. Two strategies exist; the protocol supports both and implementations choose:
+
+- **Immediate:** The prior endorser's record transitions to `awaiting_review`. The endorsement lapses unless explicitly renewed. No notification system required — the endorser discovers it via `vouch status` or the next CI run. Simple, local, functional. This is what the vouch CLI implements.
+
+- **Collaborative:** Invalidation triggers an active review request to prior endorsers, analogous to CODEOWNERS-based reviewer solicitation. The prior endorser must explicitly re-endorse, revoke, or nominate a replacement. Requires durable state management and a notification layer — beyond a CLI tool, but a natural fit for web extensions built over existing VCS primitives: PR review requests, GitHub/GitLab integrations, bot-mediated handoffs.
+
+The choice between strategies is a team decision, not a protocol decision. Both are legitimate. The difference is friction and accountability.
 
 **Two distinct measurements.** VOUCH tracks two things that are easy to conflate and critical to keep separate:
 
@@ -396,6 +404,19 @@ $ vouch stats --config .vouchrc   # use project config for dirs, excludes, thres
 ```
 
 `vouch stats` is the CI-facing command. `vouch ls` is the human-facing command. Same underlying data, different presentation.
+
+**Tracking your pending reviews — `vouch status`:**
+
+```
+$ vouch status
+FILES AWAITING YOUR RE-ENDORSEMENT:
+src/core/query_optimizer.go    invalidated 2d ago   (author: agent)
+src/payment/processor.go       invalidated 5d ago   (author: sarah)
+```
+
+When a structural change invalidates your endorsement, `vouch status` shows what's open. You review the diff, re-endorse if you still own it, or let it lapse as known cognitive debt. No notification system, no web dependency — a local view of your endorsement gaps.
+
+For teams that want structured handoffs — review request ceremonies, explicit transfer flows, CODEOWNERS-style solicitation triggered by invalidation — that's the territory of web extensions built over GitHub/GitLab primitives. The CLI does the immediate strategy well and leaves the collaborative one to the layer above.
 
 **Storage: git notes.** Endorsement data lives in [git notes](https://git-scm.com/docs/git-notes) — metadata attached to git objects without modifying the commit history. No merge conflicts. The data travels with the repository. Each endorsement is stored as a JSON record per the protocol spec, anchored to a commit hash and scoped to line ranges. A separate `refs/notes/vouch-state` note on HEAD holds the materialized current state — what CI reads.
 
