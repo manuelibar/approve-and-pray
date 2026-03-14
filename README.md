@@ -222,13 +222,15 @@ The core model rests on a few principles:
 
 **Authorship is not endorsement — by default and by design.** Committing code MUST NOT auto-create an endorsement. The act of writing a change and the act of vouching for it are separate, deliberate acts. A developer can — and often should — commit code without endorsing it: prototypes, exploratory work, agent-generated sections they haven't fully reviewed, changes that need a second pair of eyes. The endorsement is the moment of ownership declaration. The commit is not. An agent authors code. A developer commits code. A human endorses it. The protocol keeps these three roles distinct. Nothing in the write path implies anything about the comprehension path.
 
-**Endorsement Revocation Strategy.** When an endorsement is invalidated by structural change, the prior endorser enters a gap that needs resolution. Two strategies exist; the protocol supports both and implementations choose:
+**Endorsement Revocation Strategy.** When structural change invalidates an endorsement, the prior endorser's coverage is immediately and fully revoked. No transitional state, no grace period. The code changed — the endorsement no longer reflects reality, so it's gone. The revocation event is recorded with full metadata: what changed, who changed it, which commit, when. That record is what `vouch status` reads.
 
-- **Immediate:** The prior endorser's record transitions to `awaiting_review`. The endorsement lapses unless explicitly renewed. No notification system required — the endorser discovers it via `vouch status` or the next CI run. Simple, local, functional. This is what the vouch CLI implements.
+Two strategies exist for what happens next:
 
-- **Collaborative:** Invalidation triggers an active review request to prior endorsers, analogous to CODEOWNERS-based reviewer solicitation. The prior endorser must explicitly re-endorse, revoke, or nominate a replacement. Requires durable state management and a notification layer — beyond a CLI tool, but a natural fit for web extensions built over existing VCS primitives: PR review requests, GitHub/GitLab integrations, bot-mediated handoffs.
+- **Immediate (default):** Hard revocation, no notification required. The endorser discovers what they lost via `vouch status` — a natural companion to `git pull`. They review the diff, decide whether to re-endorse, and act. No web dependency, no ceremony. Just honest accounting and a clear decision point.
 
-The choice between strategies is a team decision, not a protocol decision. Both are legitimate. The difference is friction and accountability.
+- **Collaborative:** The revocation event triggers an active review request to prior endorsers, analogous to CODEOWNERS-based reviewer solicitation. The prior endorser must explicitly re-endorse, revoke, or nominate a replacement. Requires a notification layer and durable state management — beyond a CLI, but a natural fit for web extensions built over VCS primitives: PR review requests, GitHub/GitLab integrations, bot-mediated handoffs.
+
+The vouch CLI is aggressive by default. The collaborative layer is additive, not a replacement.
 
 **Two distinct measurements.** VOUCH tracks two things that are easy to conflate and critical to keep separate:
 
@@ -405,18 +407,29 @@ $ vouch stats --config .vouchrc   # use project config for dirs, excludes, thres
 
 `vouch stats` is the CI-facing command. `vouch ls` is the human-facing command. Same underlying data, different presentation.
 
-**Tracking your pending reviews — `vouch status`:**
+**Tracking your revocations — `vouch status`:**
+
+The workflow that replaces the notification system: `git pull && vouch status`.
 
 ```
+$ git pull
+Updating abc123..def456
+ src/core/query_optimizer.go  |  47 ++++---
+ src/payment/processor.go     |  12 +-
+
 $ vouch status
-FILES AWAITING YOUR RE-ENDORSEMENT:
-src/core/query_optimizer.go    invalidated 2d ago   (author: agent)
-src/payment/processor.go       invalidated 5d ago   (author: sarah)
+ENDORSEMENTS REVOKED BY RECENT CHANGES:
+  src/core/query_optimizer.go    revoked 2m ago   commit: def456   author: agent
+  src/payment/processor.go       revoked 3d ago   commit: abc789   author: sarah
+
+2 files. Run 'vouch ls -a <file>' to inspect. Run 'vouch endorse <file>' to reclaim.
 ```
 
-When a structural change invalidates your endorsement, `vouch status` shows what's open. You review the diff, re-endorse if you still own it, or let it lapse as known cognitive debt. No notification system, no web dependency — a local view of your endorsement gaps.
+Pull brings changes. `vouch status` shows what those changes cost you in endorsement coverage. The post-merge hook has already run `vouch sync`, so by the time you type `vouch status` the state is current — no manual rebuild.
 
-For teams that want structured handoffs — review request ceremonies, explicit transfer flows, CODEOWNERS-style solicitation triggered by invalidation — that's the territory of web extensions built over GitHub/GitLab primitives. The CLI does the immediate strategy well and leaves the collaborative one to the layer above.
+Same cadence you already have for `git status`. No emails, no review request queues, no web UI. You own the decision to re-endorse or not — and the cognitive debt counter reflects whichever choice you make, immediately and honestly.
+
+For teams that want structured handoffs — review requests, transfer ceremonies, CODEOWNERS-style solicitation on invalidation — that's the territory of web extensions built over GitHub/GitLab primitives. The CLI does the aggressive strategy well and leaves the collaborative layer above it.
 
 **Storage: git notes.** Endorsement data lives in [git notes](https://git-scm.com/docs/git-notes) — metadata attached to git objects without modifying the commit history. No merge conflicts. The data travels with the repository. Each endorsement is stored as a JSON record per the protocol spec, anchored to a commit hash and scoped to line ranges. A separate `refs/notes/vouch-state` note on HEAD holds the materialized current state — what CI reads.
 
@@ -441,11 +454,16 @@ The real power isn't the CLI alone — it's the `vouch` skill integrated into ag
 
 ### Ana's Monday Morning
 
-Ana opens her terminal. She runs `vouch stats --config .vouchrc`. Three lines come back above threshold: the payment service is at 22%, auth at 14%, core data at 31%.
+Ana opens her terminal and pulls.
 
-She runs `vouch ls src/core/` to find the culprit. The query optimizer is red — unknown across 60% of its lines. An agent refactored it last Thursday. The change invalidated her endorsement and her colleague Marco's. Nobody has re-endorsed yet.
+```bash
+git pull
+vouch status
+```
 
-She runs `vouch ls -a src/core/query_optimizer.go`. She can see exactly which line ranges went dark. She opens the file, asks her coding agent to walk her through what changed: "The refactor replaced the nested loop join selection with a cost-based optimizer. Core logic changed in three functions. Here's what each one does and why."
+Two files come back: `src/core/query_optimizer.go` revoked three days ago by an agent, `src/payment/processor.go` revoked this morning by a teammate. She runs `vouch stats --config .vouchrc` — core data is at 31%, above the 20% Tier-1 threshold. That's the one that matters.
+
+She runs `vouch ls -a src/core/query_optimizer.go` to see which line ranges went dark. She opens the file, asks her coding agent to walk her through what changed: "The refactor replaced the nested loop join selection with a cost-based optimizer. Core logic changed in three functions. Here's what each one does and why."
 
 Ana reads the explanation, traces the code, runs the tests herself. She runs `vouch endorse src/core/query_optimizer.go`. `vouch stats` updates: core data 19%. Below threshold. Green.
 
